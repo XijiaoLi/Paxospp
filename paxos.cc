@@ -13,37 +13,74 @@ using paxos::EProposal;
 using paxos::EResponse;
 
 
-Status PaxosServiceImpl::Echo(ServerContext* context,
-                              const EProposal* proposal,
-                              EResponse* response)
-  {
-    int seq = proposal->seq();
-    std::string value = proposal->value();
+grpc::Status PaxosServiceImpl::Echo(ServerContext* context, const EProposal* proposal, EResponse* response)
+{
+  int seq = proposal->seq();
+  std::string value = proposal->value();
 
-    response->set_seq(seq);
-    response->set_value(value);
+  response->set_seq(seq);
+  response->set_value(value);
 
-    return Status::OK;
-  }
+  return grpc::Status::OK;
+}
 
-  // Status Initialize() {
-    // Status get_status = GetCoordinator();
-    // auto* coordinator_stub = paxos_stubs_map_->GetCoordinatorStub();
-    // // If not successful, start an election for Coordinators.
-    // if (!get_status.ok()) {
-    //   Status elect_status = ElectNewCoordinator();
-    //   if (!elect_status.ok()) {
-    //     return Status(
-    //         grpc::StatusCode::ABORTED,
-    //         "ElectNewCoordinator Failed: " + elect_status.error_message());
-    //   }
-    // }
-    // Status recover_status = GetRecovery();
-    // if (!recover_status.ok()) {
-    //   return Status(grpc::StatusCode::ABORTED,
-    //                 "GetRecovery Failed: " + recover_status.error_message());
-    // }
-    // return Status::OK;
+grpc::Status PaxosServiceImpl::Prepare(ServerContext* context, const Proposal* proposal, Response* response)
+{
+  // int seq = proposal->seq();
+  // std::string value = proposal->value();
+  //
+  // response->set_seq(seq);
+  // response->set_value(value);
+
+  return grpc::Status::OK;
+}
+
+grpc::Status PaxosServiceImpl::Accept(ServerContext* context, const Proposal* proposal, Response* response)
+{
+  // int seq = proposal->seq();
+  // std::string value = proposal->value();
+  //
+  // response->set_seq(seq);
+  // response->set_value(value);
+
+  return grpc::Status::OK;
+}
+
+grpc::Status PaxosServiceImpl::Decide(ServerContext* context, const Proposal* proposal, Response* response)
+{
+  // int seq = proposal->seq();
+  // std::string value = proposal->value();
+  //
+  // response->set_seq(seq);
+  // response->set_value(value);
+
+  return grpc::Status::OK;
+}
+
+grpc::Status PaxosServiceImpl::Ping(ServerContext* context, const EmptyMessage* request, EmptyMessage* response)
+{
+  return grpc::Status::OK;
+}
+
+
+  // grpc::Status Initialize() {
+  //   grpc::Status get_status = GetCoordinator();
+  //   auto* coordinator_stub = paxos_stubs_map_->GetCoordinatorStub();
+  //   // If not successful, start an election for Coordinators.
+  //   if (!get_status.ok()) {
+  //     grpc::Status elect_status = ElectNewCoordinator();
+  //     if (!elect_status.ok()) {
+  //       return grpc::Status(
+  //           grpc::StatusCode::ABORTED,
+  //           "ElectNewCoordinator Failed: " + elect_status.error_message());
+  //     }
+  //   }
+  //   grpc::Status recover_status = GetRecovery();
+  //   if (!recover_status.ok()) {
+  //     return grpc::Status(grpc::StatusCode::ABORTED,
+  //                   "GetRecovery Failed: " + recover_status.error_message());
+  //   }
+  //   return grpc::Status::OK;
   // }
 
 void RunServer() {
