@@ -110,12 +110,12 @@ Clone this `Paxos-Cpp` repo:
 
 ```sh
 $ https://github.com/XijiaoLi/Paxos-Cpp.git
+$ cd Paxos-Cpp
 ```
 
 Under `Paxos-Cpp` folder, run the following commands to build the excutable using `cmake`:
 
 ```sh
-$ cd Paxos-Cpp
 $ mkdir -p cmake/build
 $ pushd cmake/build
 $ cmake -DCMAKE_PREFIX_PATH=$MY_INSTALL_DIR ../..
