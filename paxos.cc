@@ -1,5 +1,4 @@
 #include <cstdlib>
-#include <string>
 
 #include "paxos.h"
 
@@ -16,6 +15,7 @@ using paxos::EmptyMessage;
 
 PaxosServiceImpl::PaxosServiceImpl(std::vector<std::string> peers, int me)
     : peers(peers), me(me) {}
+
 
 grpc::Status PaxosServiceImpl::SimpleReceive(ServerContext* context, const Proposal* proposal, Response* response)
 {
@@ -44,6 +44,7 @@ grpc::Status PaxosServiceImpl::SimpleReceive(ServerContext* context, const Propo
 
   return grpc::Status::OK;
 }
+
 
 grpc::Status PaxosServiceImpl::Ping(ServerContext* context, const EmptyMessage* request, EmptyMessage* response)
 {

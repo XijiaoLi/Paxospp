@@ -8,6 +8,7 @@
 #include <any> // std::any
 #include <map> // std::map
 #include <tuple> // std::tuple
+#include <mutex> // std::shared_mutex
 
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
