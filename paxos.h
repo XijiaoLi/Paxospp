@@ -42,7 +42,7 @@ struct Instance {
   std::shared_mutex mu; // mu
   Proposer p; // proposer
   Acceptor a; // acceptor
-  std::any vd; // decidedValue
+  std::string vd; // decidedValue
 };
 
 // typedef std::map<int, *Instance> InstanceMap;
