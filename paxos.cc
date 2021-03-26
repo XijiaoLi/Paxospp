@@ -6,69 +6,46 @@
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
-using grpc::Status;
 
 using paxos::Paxos;
-using paxos::EProposal;
-using paxos::EResponse;
+using paxos::Proposal;
+using paxos::Response;
+using paxos::MetaData;
+using paxos::EmptyMessage;
 
 
-Status PaxosServiceImpl::Echo(ServerContext* context,
-                              const EProposal* proposal,
-                              EResponse* response)
-  {
-    int seq = proposal->seq();
-    std::string value = proposal->value();
+PaxosServiceImpl::PaxosServiceImpl(std::vector<std::string> peers, int me)
+    : peers(peers), me(me) {}
 
-    response->set_seq(seq);
-    response->set_value(value);
+grpc::Status PaxosServiceImpl::SimpleReceive(ServerContext* context, const Proposal* proposal, Response* response)
+{
+  int n = proposal->proposed_num();
+  int seq = proposal->seq();
+  std::string value = proposal->value();
+  MetaData meta = proposal->meta();
+  std::string type = proposal->type();
 
-    return Status::OK;
-  }
+  std::cout << "Server " << peers[me] << " received: type = " << type
+            << ", n = " << n << ", seq = " << seq << ", val = " << value
+            << ", meta = " << meta.me << " " << meta.done
+            << std::endl;
 
-  // Status Initialize() {
-    // Status get_status = GetCoordinator();
-    // auto* coordinator_stub = paxos_stubs_map_->GetCoordinatorStub();
-    // // If not successful, start an election for Coordinators.
-    // if (!get_status.ok()) {
-    //   Status elect_status = ElectNewCoordinator();
-    //   if (!elect_status.ok()) {
-    //     return Status(
-    //         grpc::StatusCode::ABORTED,
-    //         "ElectNewCoordinator Failed: " + elect_status.error_message());
-    //   }
-    // }
-    // Status recover_status = GetRecovery();
-    // if (!recover_status.ok()) {
-    //   return Status(grpc::StatusCode::ABORTED,
-    //                 "GetRecovery Failed: " + recover_status.error_message());
-    // }
-    // return Status::OK;
-  // }
+  *Instance ins = instances[seq];
+  ins->vd = value;
+  MetaData my_meta;
+  my_meta->set_me(me);
+  my_meta->set_done(0);
 
-void RunServer() {
-  std::string server_address("0.0.0.0:50051");
-  PaxosServiceImpl service;
-  ServerBuilder builder;
+  response->set_approved(true);
+  response->set_number(seq);
+  response->set_value(value);
+  response->set_meta(my_meta);
+  response->set_value(value);
 
-  grpc::EnableDefaultHealthCheckService(true);
-  grpc::reflection::InitProtoReflectionServerBuilderPlugin();
-  // Listen on the given address without any authentication mechanism.
-  builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-  // Register "service" as the instance through which we'll communicate with
-  // clients. In this case it corresponds to an *synchronous* service.
-  builder.RegisterService(&service);
-  // Finally assemble the server.
-  std::unique_ptr<Server> server(builder.BuildAndStart());
-  std::cout << "Server listening on " << server_address << std::endl;
-
-  // Wait for the server to shutdown. Note that some other thread must be
-  // responsible for shutting down the server for this call to ever return.
-  server->Wait();
+  return grpc::Status::OK;
 }
 
-int main(int argc, char** argv) {
-  RunServer();
-
-  return 0;
+grpc::Status PaxosServiceImpl::Ping(ServerContext* context, const EmptyMessage* request, EmptyMessage* response)
+{
+  return grpc::Status::OK;
 }
