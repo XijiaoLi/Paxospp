@@ -17,7 +17,7 @@ PaxosServiceImpl::PaxosServiceImpl(std::vector<std::string> peers, int me)
     : peers(peers), me(me) {}
 
 
-grpc::Status PaxosServiceImpl::SimpleReceive(ServerContext* context, const Proposal* proposal, Response* response)
+grpc::Status PaxosServiceImpl::SimpleReceive(ServerContext* context, const Proposal* proposal, Response* response) override
 {
   int n = proposal->proposed_num();
   int seq = proposal->seq();

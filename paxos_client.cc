@@ -13,22 +13,22 @@ using grpc::ClientContext;
 using grpc::Status;
 
 using paxos::Paxos;
-using paxos::EProposal;
-using paxos::EResponse;
+using paxos::Proposal;
+using paxos::Response;
 
 class PaxosClient {
     public:
         PaxosClient(std::shared_ptr<Channel> channel) : stub_(Paxos::NewStub(channel)) {}
 
-        EResponse Echo(int seq, std::string value) {
+        EResponse SimpleReceive(int seq, std::string value) {
             ClientContext context;
-            EProposal proposal;
-            EResponse response;
+            Proposal proposal;
+            Response response;
 
             proposal.set_seq(seq);
             proposal.set_value(value);
 
-            Status status = stub_->Echo(&context, proposal, &response);
+            Status status = stub_->SimpleReceive(&context, proposal, &response);
 
             if(status.ok()){
                 return response;
@@ -37,6 +37,8 @@ class PaxosClient {
                 return response;
             }
         }
+
+
 
     private:
         std::unique_ptr<Paxos::Stub> stub_;
@@ -51,12 +53,12 @@ void Run() {
         )
     );
 
-    EResponse response;
+    Response response;
 
     int seq = 1;
     std::string value = "hello";
 
-    response = pclient.Echo(seq, value);
+    response = pclient.SimpleReceive(seq, value);
     std::cout << "Response received: seq = " << response.seq() << "; value = " << response.value() << std::endl;
 }
 

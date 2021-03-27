@@ -104,6 +104,12 @@ $ popd
 
 We **strongly** encourage you to install gRPC *locally* — using an appropriately set `CMAKE_INSTALL_PREFIX` — because there is no easy way to uninstall gRPC after you’ve installed it globally.
 
+If errors and warnings were encountered when you followed exactly the scripts above, there are two solutions:
+1. It is possible that you switched to a different dir when installing
+2. Or your system is out of memory/resources, try clean up some unused resources and follow the script again
+
+
+
 ### Build and run Paxos server and client
 
 Clone this `Paxos-Cpp` repo:
