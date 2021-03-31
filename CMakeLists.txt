@@ -53,12 +53,21 @@ target_link_libraries(hw_grpc_proto
   ${_GRPC_GRPCPP}
   ${_PROTOBUF_LIBPROTOBUF})
 
+add_library(paxoslib
+  "paxos.cc"
+  "paxos.h")
+target_link_libraries(paxoslib
+  ${_REFLECTION}
+  ${_GRPC_GRPCPP}
+  ${_PROTOBUF_LIBPROTOBUF})
+
 # Targets (client|server)
 foreach(_target
-  paxos_client paxos)
+  server-main)
   add_executable(${_target} "${_target}.cc")
   target_link_libraries(${_target}
     hw_grpc_proto
+    paxoslib
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})

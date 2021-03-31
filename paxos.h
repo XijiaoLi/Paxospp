@@ -5,10 +5,10 @@
 #include <iostream>
 #include <memory>
 #include <string> // std::string
-#include <any> // std::any
-#include <map> // std::map
-#include <tuple> // std::tuple
-#include <mutex> // std::shared_mutex
+// #include <any> // std::any
+// #include <map> // std::map
+// #include <tuple> // std::tuple
+// #include <mutex> // std::shared_mutex
 
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
@@ -27,30 +27,30 @@ using paxos::MetaData;
 using paxos::EmptyMessage;
 
 
-struct Proposer {
-  int n; // proposedNumber
-  int np; // highestSeenProposedNumber
-};
-
-struct Acceptor {
-  int np; // highestProposedNumber
-  int na; // highestAcceptedNumber
-  std::any va; // highestAcceptedValue
-};
-
-struct Instance {
-  std::shared_mutex mu; // mu
-  Proposer p; // proposer
-  Acceptor a; // acceptor
-  std::string vd; // decidedValue
-};
+// struct Proposer {
+//   int n; // proposedNumber
+//   int np; // highestSeenProposedNumber
+// };
+//
+// struct Acceptor {
+//   int np; // highestProposedNumber
+//   int na; // highestAcceptedNumber
+//   std::string va; // highestAcceptedValue
+// };
+//
+// struct Instance {
+//   std::shared_mutex mu; // mu
+//   Proposer p; // proposer
+//   Acceptor a; // acceptor
+//   std::string vd; // decidedValue
+// };
 
 // typedef std::map<int, *Instance> InstanceMap;
 
 class PaxosServiceImpl final : public Paxos::Service {
   public:
 
-    PaxosServiceImpl(std::vector<std::string> peers, int me);
+    PaxosServiceImpl(std::vector<std::unique_ptr<Paxos::Stub>>* peers, int me);
 
     // test if the server is available
     grpc::Status Ping(ServerContext* context, const EmptyMessage* request, EmptyMessage* response) override;
@@ -58,21 +58,22 @@ class PaxosServiceImpl final : public Paxos::Service {
     // store anything in the proposal
     grpc::Status SimpleReceive(ServerContext* context, const Proposal* proposal, Response* response) override;
 
+    // main entry point for running paxos service
+    grpc::Status Run(int seq, std::string v);
+
     /* TODO: will implement in later version
     grpc::Status Receive(ServerContext* context, const Proposal* proposal, Response* response) override;
     */
 
-    void start();
-
   private:
 
-    *Instance get_instance(int seq);
-    std::tuple<bool, std::any> propose(*Instance instance, int seq);
-    bool request_accept(*Instance instance, int seq, std::any value);
-    void decide(int seq, std::any value);
-    MetaData init_meta();
-    void update_meta(MetaData meta);
-    void clean_done_values();
+    // *Instance get_instance(int seq);
+    // std::tuple<bool, std::any> propose(*Instance instance, int seq);
+    // bool request_accept(*Instance instance, int seq, std::any value);
+    // void decide(int seq, std::any value);
+    // MetaData init_meta();
+    // void update_meta(MetaData meta);
+    // void clean_done_values();
 
     // below are list of fields in PaxosServiceImpl class,
     // corresponding to line 34-39 in paxos.go
@@ -87,9 +88,9 @@ class PaxosServiceImpl final : public Paxos::Service {
     int                      to_clean_seq; // toCleanSeq
     */
 
-    std::vector<std::string> peers; // peers
+    std::vector<std::unique_ptr<Paxos::Stub>>* peers; // peers
     const int                me; // me
-    std::shared_mutex        acceptor_mu; //acceptorLock
-    std::map<int, *Instance> instances; // instances (seq -> instance)
+    // std::shared_mutex        acceptor_mu; //acceptorLock
+    // std::map<int, *Instance> instances; // instances (seq -> instance)
 
 };
