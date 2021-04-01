@@ -50,7 +50,7 @@ using paxos::EmptyMessage;
 class PaxosServiceImpl final : public Paxos::Service {
   public:
 
-    PaxosServiceImpl(std::vector<std::unique_ptr<Paxos::Stub>>* peers, int me);
+    PaxosServiceImpl(int replica_size, std::vector<std::shared_ptr<grpc::Channel>> channels, int me);
 
     // test if the server is available
     grpc::Status Ping(ServerContext* context, const EmptyMessage* request, EmptyMessage* response) override;
@@ -88,8 +88,8 @@ class PaxosServiceImpl final : public Paxos::Service {
     int                      to_clean_seq; // toCleanSeq
     */
 
-    std::vector<std::unique_ptr<Paxos::Stub>>* peers; // peers
-    const int                me; // me
+    std::vector<std::unique_ptr<Paxos::Stub>> peers; // peers
+    int me; // me
     // std::shared_mutex        acceptor_mu; //acceptorLock
     // std::map<int, *Instance> instances; // instances (seq -> instance)
 

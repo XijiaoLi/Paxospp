@@ -14,8 +14,23 @@ using paxos::MetaData;
 using paxos::EmptyMessage;
 
 
-PaxosServiceImpl::PaxosServiceImpl(std::vector<std::unique_ptr<Paxos::Stub>>* peers, int me)
-    : peers(peers), me(me) {}
+std::vector<std::unique_ptr<Paxos::Stub>> make_stubs(int replica_size, std::vector<std::shared_ptr<grpc::Channel>> channels)
+{
+  std::vector<std::unique_ptr<Paxos::Stub>> peers; // a list of stubs
+
+  for (int i = 0; i < replica_size; ++i) {
+    // create a stub associated with the channel
+    std::unique_ptr<Paxos::Stub> peer_i = std::make_unique<Paxos::Stub>(channels[i]);
+    peers.push_back(std::move(peer_i));
+    std::cout << "Adding peer " << i << " to the Paxos stubs list ..." << std::endl;
+  }
+
+  return peers;
+}
+
+
+PaxosServiceImpl::PaxosServiceImpl(int replica_size, std::vector<std::shared_ptr<grpc::Channel>> channels, int me)
+  : peers(std::move(make_stubs(replica_size, channels))), me(me) {}
 
 
 grpc::Status PaxosServiceImpl::SimpleReceive(ServerContext* context, const Proposal* proposal, Response* response)
@@ -33,15 +48,18 @@ grpc::Status PaxosServiceImpl::SimpleReceive(ServerContext* context, const Propo
 
   // Instance* ins = instances[seq];
   // ins->vd = value;
-  MetaData my_meta;
-  my_meta.set_me(me);
-  my_meta.set_done(0);
+  // MetaData my_meta;
+  // my_meta.set_me(me);
+  // my_meta.set_done(0);
 
   response->set_approved(true);
   response->set_number(seq);
   response->set_value(value);
-  response->set_allocated_meta(&my_meta);
+  std::cout << "value " << std::endl;
+  // response->set_allocated_meta(&my_meta);
+  std::cout << "my meta" << std::endl;
   response->set_type("server message");
+  std::cout << "my type" << std::endl;
 
   return grpc::Status::OK;
 }
@@ -56,11 +74,9 @@ grpc::Status PaxosServiceImpl::Ping(ServerContext* context, const EmptyMessage* 
 grpc::Status PaxosServiceImpl::Run(int seq, std::string v)
 {
   int count = 0;
-  for (const auto& stub : *peers) {
+  for (const auto& stub : peers) {
     count ++;
     ClientContext context;
-    auto deadline = std::chrono::system_clock::now() + std::chrono::milliseconds(5000);
-    context.set_deadline(deadline);
 
     MetaData meta;
     meta.set_me(me);
@@ -76,6 +92,8 @@ grpc::Status PaxosServiceImpl::Run(int seq, std::string v)
     Response response;
 
     grpc::Status status = stub->SimpleReceive(&context, proposal, &response);
+    std::cout << "Client " << me << " sent to Peer " << count << std::endl;
+
     if (!status.ok()) {
       std::cout << "Client " << me << " received from Peer " << count << " failed" << std::endl;
     } else {

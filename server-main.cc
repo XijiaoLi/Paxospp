@@ -1,6 +1,7 @@
 #include <chrono>
-#include <string>
-#include <thread>
+#include <memory>
+#include <string> // std::string
+#include <thread> // std::thread
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -12,6 +13,11 @@
 using google::protobuf::TextFormat;
 using paxos::Paxos;
 
+void square(int x) {
+    int accum = x * x;
+    std::cout << "acc: " << accum << std::endl;
+}
+
 std::unique_ptr<grpc::Server> initialize_service(const std::string& server_address, grpc::Service* service)
 {
   grpc::ServerBuilder builder;
@@ -22,46 +28,45 @@ std::unique_ptr<grpc::Server> initialize_service(const std::string& server_addre
   // assemble the server
   std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
   // wait for the server to shutdown
-  server->Wait();
+  // server->Wait();
 
   std::cout << "Paxos is now listening on: " << server_address << std::endl;
   return std::move(server);
 }
 
 
-// void start_service(grpc::Server* server)
-// {
-//   server->Wait();
-// }
-
-
-std::vector<std::unique_ptr<Paxos::Stub>> make_stubs(int replica_size, const std::vector<std::string>& addr_v)
+void start_service(grpc::Server* server)
 {
-  std::vector<std::unique_ptr<Paxos::Stub>> peers; // a list of stubs
+  // wait for the server to shutdown
+  server->Wait();
+  std::cout << "wait for the server to shutdown..." << std::endl;
+}
+
+
+std::vector<std::shared_ptr<grpc::Channel>> make_channels(int replica_size, const std::vector<std::string>& addr_v)
+{
+  std::vector<std::shared_ptr<grpc::Channel>> channels; // a list of channels
 
   for (int i = 0; i < replica_size; ++i) {
     // at each endpoint, create a channel for paxos to send rpc
-    // and create a stub associated with it
-    std::unique_ptr<Paxos::Stub> peer_i = std::make_unique<Paxos::Stub>(
-      grpc::CreateChannel(addr_v[i], grpc::InsecureChannelCredentials())
-    );
-    peers.push_back(std::move(peer_i));
-    std::cout << "Adding " << addr_v[i] << " to the Paxos stubs list ..." << std::endl;
+    std::shared_ptr<grpc::Channel> channel_i = grpc::CreateChannel(addr_v[i], grpc::InsecureChannelCredentials());
+    channels.push_back(std::move(channel_i));
+    std::cout << "Adding " << addr_v[i] << " to the channel list ..." << std::endl;
   }
 
-  return peers;
+  return channels;
 }
 
-// std::vector<PaxosServiceImpl> make_servers(int replica_size, const std::vector<std::string>& addr_v, std::vector<std::unique_ptr<Paxos::Stub>>* peers)
+
+// std::vector<PaxosServiceImpl> make_paxos_services(int replica_size, const std::vector<std::string>& addr_v, std::vector<std::shared_ptr<grpc::Channel>> channels)
 // {
-//   std::vector<PaxosServiceImpl> pxos; // a list of paxos service
+//   std::vector<PaxosServiceImpl> pxos; // a list of paxos services
 //
 //   for (int i = 0; i < replica_size; ++i) {
-//     PaxosServiceImpl paxos_service(peers, i);
-//     std::unique_ptr<grpc::Server> paxos_server = initialize_service(addr_v[i], &paxos_service);
+//     PaxosServiceImpl paxos_service(replica_size, channels, i);
+//     // std::unique_ptr<grpc::Server> paxos_server = initialize_service(addr_v[i], &paxos_service);
 //     pxos.push_back(std::move(paxos_service));
 //   }
-//
 //   return pxos;
 // }
 
@@ -72,15 +77,57 @@ int main(int argc, char** argv) {
   // parameters
   int replica_size = 3;
 
-  std::vector<std::string> addr_v {"0.0.0.0:90001", "0.0.0.0:90002", "0.0.0.0:90003"};
+  std::vector<std::string> addr_v {"0.0.0.0:50051", "0.0.0.0:50052", "0.0.0.0:50053"};
 
-  std::vector<std::unique_ptr<Paxos::Stub>> peers = make_stubs(replica_size, addr_v);
+  std::vector<std::shared_ptr<grpc::Channel>> channels = make_channels(replica_size, addr_v);
 
-  // std::vector<PaxosServiceImpl> pxos = make_servers(replica_size, addr_v, &peers);
+  /* not sure why this does not work
+  std::vector<PaxosServiceImpl*> pxs;
+  std::vector<std::thread> pxs_threads;
+  for (int i = 0; i < replica_size; ++i) {
+    std::cout << i << " start" << std::endl;
+    PaxosServiceImpl paxos_service(replica_size, channels, i);
+    std::unique_ptr<grpc::Server> paxos_server = initialize_service(addr_v[i], &paxos_service);
+    std::thread paxos_thread(start_service, paxos_server.get());
+    pxs_threads.push_back(std::move(paxos_thread));
+    pxs.push_back(&paxos_service);
+    std::cout << i << " ok" << std::endl;
+  }
+
+  for (int i = 0; i < replica_size; i++) {
+    pxs_threads[i].join();
+    std::cout << i << " joined" << std::endl;
+  }
+  */
+
+  // std::vector<std::thread> ths;
+  // for (int i = 1; i <= 10; i++) {
+  //   ths.push_back(std::thread(&square, i));
+  // }
+  //
+  // for (auto& th : ths) {
+  //   th.join();
+  // }
 
   // PaxosServiceImpl main_server = pxos[0];
 
-   // grpc::Status put_status = main_server.Run(1, "put");
+  PaxosServiceImpl paxos_0(replica_size, channels, 0);
+  std::unique_ptr<grpc::Server> paxos_server_0 = initialize_service(addr_v[0], &paxos_0);
+  std::thread paxos_thread_0(start_service, paxos_server_0.get());
+
+  PaxosServiceImpl paxos_1(replica_size, channels, 1);
+  std::unique_ptr<grpc::Server> paxos_server_1 = initialize_service(addr_v[1], &paxos_1);
+  std::thread paxos_thread_1(start_service, paxos_server_1.get());
+
+  PaxosServiceImpl paxos_2(replica_size, channels, 2);
+  std::unique_ptr<grpc::Server> paxos_server_2 = initialize_service(addr_v[2], &paxos_2);
+  std::thread paxos_thread_2(start_service, paxos_server_2.get());
+
+  grpc::Status put_status = paxos_1.Run(1, "put");
+
+  paxos_thread_0.join();
+  paxos_thread_1.join();
+  paxos_thread_2.join();
 
   return 0;
 }
