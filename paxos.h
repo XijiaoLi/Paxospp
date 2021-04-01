@@ -23,7 +23,6 @@ using grpc::ServerContext;
 using paxos::Paxos;
 using paxos::Proposal;
 using paxos::Response;
-using paxos::MetaData;
 using paxos::EmptyMessage;
 
 

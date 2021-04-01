@@ -25,25 +25,23 @@ service Paxos {
   rpc Receive (Proposal) returns (Response) {} */
 }
 
-message MetaData {
-  int32 me = 1;
-  int32 done = 2;
-}
 
 message Proposal {
-  int32     proposed_num = 1;
-  int32     seq = 2;
-  string    value = 3;
-  MetaData  meta = 4;
-  string    type = 5;
+  string    type = 1;
+  int32     proposed_num = 2;
+  int32     seq = 3;
+  string    value = 4;
+  int32     me = 5;
+  int32     done = 6;
 }
 
 message Response {
-  bool      approved = 1;
-  int32     number = 2;
-  string    value = 3;
-  MetaData  meta = 4;
-  string    type = 5;
+  string    type = 1;
+  bool      approved = 2;
+  int32     number = 3;
+  string    value = 4;
+  int32     me = 5;
+  int32     done = 6;
 }
 
 message EmptyMessage {}
