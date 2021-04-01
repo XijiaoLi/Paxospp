@@ -57,8 +57,13 @@ class PaxosServiceImpl final : public Paxos::Service {
     // store anything in the proposal
     grpc::Status SimpleReceive(ServerContext* context, const Proposal* proposal, Response* response) override;
 
+    // paxos service
+    grpc::Status Receive(ServerContext* context, const Proposal* proposal, Response* response) override;
+
     // main entry point for running paxos service
     grpc::Status Run(int seq, std::string v);
+
+    grpc::Status Start(int seq, std::string v);
 
     /* TODO: will implement in later version
     grpc::Status Receive(ServerContext* context, const Proposal* proposal, Response* response) override;
@@ -73,6 +78,7 @@ class PaxosServiceImpl final : public Paxos::Service {
     // MetaData init_meta();
     // void update_meta(MetaData meta);
     // void clean_done_values();
+    int Min();
 
     // below are list of fields in PaxosServiceImpl class,
     // corresponding to line 34-39 in paxos.go

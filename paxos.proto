@@ -21,8 +21,7 @@ package paxos;
 service Paxos {
   rpc Ping (EmptyMessage) returns (EmptyMessage) {}
   rpc SimpleReceive (Proposal) returns (Response) {}
-  /* TODO: will implement in later version
-  rpc Receive (Proposal) returns (Response) {} */
+  rpc Receive (Proposal) returns (Response) {}
 }
 
 

@@ -12,6 +12,7 @@ using paxos::Proposal;
 using paxos::Response;
 using paxos::EmptyMessage;
 
+// ---------------------------- Helper Function ----------------------------
 
 std::vector<std::unique_ptr<Paxos::Stub>> make_stubs(int replica_size, std::vector<std::shared_ptr<grpc::Channel>> channels)
 {
@@ -28,8 +29,23 @@ std::vector<std::unique_ptr<Paxos::Stub>> make_stubs(int replica_size, std::vect
 }
 
 
+// ----------------------- PaxosServiceImpl Function -----------------------
+
+
 PaxosServiceImpl::PaxosServiceImpl(int replica_size, std::vector<std::shared_ptr<grpc::Channel>> channels, int me)
   : peers(std::move(make_stubs(replica_size, channels))), me(me) {}
+
+/* TODO: implement later */
+int PaxosServiceImpl::Min()
+{
+  return 0;
+}
+
+
+grpc::Status PaxosServiceImpl::Ping(ServerContext* context, const EmptyMessage* request, EmptyMessage* response)
+{
+  return grpc::Status::OK;
+}
 
 
 grpc::Status PaxosServiceImpl::SimpleReceive(ServerContext* context, const Proposal* proposal, Response* response)
@@ -62,7 +78,7 @@ grpc::Status PaxosServiceImpl::SimpleReceive(ServerContext* context, const Propo
 }
 
 
-grpc::Status PaxosServiceImpl::Ping(ServerContext* context, const EmptyMessage* request, EmptyMessage* response)
+grpc::Status PaxosServiceImpl::Receive(ServerContext* context, const Proposal* proposal, Response* response)
 {
   return grpc::Status::OK;
 }
@@ -70,6 +86,80 @@ grpc::Status PaxosServiceImpl::Ping(ServerContext* context, const EmptyMessage* 
 
 grpc::Status PaxosServiceImpl::Run(int seq, std::string v)
 {
+  int count = 0;
+  for (const auto& stub : peers) {
+    ClientContext context;
+
+    Proposal proposal;
+    proposal.set_type("client message");
+    proposal.set_proposed_num(count);
+    proposal.set_seq(seq);
+    proposal.set_value(v);
+    proposal.set_me(me);
+    proposal.set_done(0);
+
+    Response response;
+
+    std::cout << "Client " << me << " sent to Peer " << count << std::endl;
+
+    grpc::Status status = stub->SimpleReceive(&context, proposal, &response);
+
+    if (!status.ok()) {
+      std::cout << "Client " << me << " received from Peer " << count << " FAILED!" << std::endl;
+    } else {
+      std::string type = response.type();
+      bool approved = response.approved();
+      int n = response.number();
+      std::string value = response.value();
+      int peer = response.me();
+      int peer_done = response.done();
+
+      std::cout << "Client " << me << " received from Peer " << count << " with me = " << peer
+                << "\n\t type = " << type << ", n = " << n
+                << ", seq = " << seq << ", val = " << value
+                << std::endl;
+    }
+
+    count ++;
+
+  }
+  return grpc::Status::OK;
+}
+
+
+
+grpc::Status PaxosServiceImpl::Start(int seq, std::string v)
+{
+  if (seq < Min()) {
+		return grpc::Status(grpc::StatusCode::ABORTED, "Aborted: seq num is too low.");
+	}
+	// go func() {
+	// 	instance := px.getInstance(seq)
+	// 	instance.mu.Lock()
+	// 	defer instance.mu.Unlock()
+	// 	for !px.dead {
+	// 		if instance.decidedValue != nil {
+	// 			break
+	// 		}
+	// 		instance.proposer.highestSeenProposedNumber++
+	// 		instance.proposer.proposedNumber = instance.proposer.highestSeenProposedNumber
+	// 		ok, value := px.propose(instance, seq)
+	// 		if !ok {
+	// 			continue
+	// 		}
+	// 		if value != nil {
+	// 			v = value
+	// 		}
+	// 		if !px.requestAccept(instance, seq, v) {
+	// 			continue
+	// 		}
+	// 		px.decide(seq, v)
+	// 		break
+	// 	}
+	// }()
+
+
+
   int count = 0;
   for (const auto& stub : peers) {
     ClientContext context;
