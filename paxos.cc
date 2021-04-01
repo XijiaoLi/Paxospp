@@ -46,11 +46,10 @@ grpc::Status PaxosServiceImpl::SimpleReceive(ServerContext* context, const Propo
             << ", seq = " << seq << ", val = " << value
             << std::endl;
 
-  // Instance* ins = instances[seq];
-  // ins->vd = value;
-  // MetaData my_meta;
-  // my_meta.set_me(me);
-  // my_meta.set_done(0);
+  Instance ins = instances[seq];
+  std::cout << "\t initial value is " << ins.vd << ", new val is " << value << std::endl;
+  ins.vd = value;
+  instances[seq] = ins;
 
   response->set_type("server message");
   response->set_approved(true);
@@ -85,8 +84,9 @@ grpc::Status PaxosServiceImpl::Run(int seq, std::string v)
 
     Response response;
 
-    grpc::Status status = stub->SimpleReceive(&context, proposal, &response);
     std::cout << "Client " << me << " sent to Peer " << count << std::endl;
+
+    grpc::Status status = stub->SimpleReceive(&context, proposal, &response);
 
     if (!status.ok()) {
       std::cout << "Client " << me << " received from Peer " << count << " FAILED!" << std::endl;
@@ -105,7 +105,7 @@ grpc::Status PaxosServiceImpl::Run(int seq, std::string v)
     }
 
     count ++;
-    
+
   }
   return grpc::Status::OK;
 }

@@ -36,13 +36,13 @@ using paxos::EmptyMessage;
 //   int na; // highestAcceptedNumber
 //   std::string va; // highestAcceptedValue
 // };
-//
-// struct Instance {
-//   std::shared_mutex mu; // mu
-//   Proposer p; // proposer
-//   Acceptor a; // acceptor
-//   std::string vd; // decidedValue
-// };
+
+struct Instance {
+  // std::shared_mutex mu; // mu
+  // Proposer p; // proposer
+  // Acceptor a; // acceptor
+  std::string vd; // decidedValue
+};
 
 // typedef std::map<int, *Instance> InstanceMap;
 
@@ -90,6 +90,6 @@ class PaxosServiceImpl final : public Paxos::Service {
     std::vector<std::unique_ptr<Paxos::Stub>> peers; // peers
     int me; // me
     // std::shared_mutex        acceptor_mu; //acceptorLock
-    // std::map<int, *Instance> instances; // instances (seq -> instance)
+    std::map<int, Instance> instances; // instances (seq -> instance)
 
 };

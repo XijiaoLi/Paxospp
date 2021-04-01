@@ -98,18 +98,9 @@ int main(int argc, char** argv) {
     pxs_threads[i].join();
     std::cout << i << " joined" << std::endl;
   }
+
+  PaxosServiceImpl main_server = pxos[0];
   */
-
-  // std::vector<std::thread> ths;
-  // for (int i = 1; i <= 10; i++) {
-  //   ths.push_back(std::thread(&square, i));
-  // }
-  //
-  // for (auto& th : ths) {
-  //   th.join();
-  // }
-
-  // PaxosServiceImpl main_server = pxos[0];
 
   PaxosServiceImpl paxos_0(replica_size, channels, 0);
   std::unique_ptr<grpc::Server> paxos_server_0 = initialize_service(addr_v[0], &paxos_0);
@@ -124,6 +115,7 @@ int main(int argc, char** argv) {
   std::thread paxos_thread_2(start_service, paxos_server_2.get());
 
   grpc::Status put_status = paxos_1.Run(1, "put");
+  put_status = paxos_2.Run(1, "get");
 
   paxos_thread_0.join();
   paxos_thread_1.join();
