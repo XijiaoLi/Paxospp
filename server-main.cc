@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <unistd.h>
+
 
 #include <google/protobuf/text_format.h>
 #include <grpcpp/grpcpp.h>
@@ -114,8 +116,9 @@ int main(int argc, char** argv) {
   std::unique_ptr<grpc::Server> paxos_server_2 = initialize_service(addr_v[2], &paxos_2);
   std::thread paxos_thread_2(start_service, paxos_server_2.get());
 
-  grpc::Status put_status = paxos_1.Run(1, "put");
-  put_status = paxos_2.Run(1, "get");
+  grpc::Status put_status = paxos_1.Start(1, "put");
+  usleep(5000000);
+  put_status = paxos_2.Start(2, "get");
 
   paxos_thread_0.join();
   paxos_thread_1.join();

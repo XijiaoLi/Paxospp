@@ -27,21 +27,21 @@ using paxos::Response;
 using paxos::EmptyMessage;
 
 
-// struct Proposer {
-//   int n; // proposedNumber
-//   int np; // highestSeenProposedNumber
-// };
-//
-// struct Acceptor {
-//   int np; // highestProposedNumber
-//   int na; // highestAcceptedNumber
-//   std::string va; // highestAcceptedValue
-// };
+struct Proposer {
+  int n; // proposedNumber
+  int np; // highestSeenProposedNumber
+};
+
+struct Acceptor {
+  int np; // highestProposedNumber
+  int na; // highestAcceptedNumber
+  std::string va; // highestAcceptedValue
+};
 
 struct Instance {
   std::shared_mutex mu; // mu
-  // Proposer p; // proposer
-  // Acceptor a; // acceptor
+  Proposer p; // proposer
+  Acceptor a; // acceptor
   std::string vd; // decidedValue
 };
 
@@ -61,9 +61,10 @@ class PaxosServiceImpl final : public Paxos::Service {
     // paxos service
     grpc::Status Receive(ServerContext* context, const Proposal* proposal, Response* response) override;
 
-    // main entry point for running paxos service
-    grpc::Status Run(int seq, std::string v);
+    // main entry point for running SimpleReceive service
+    grpc::Status SimpleStart(int seq, std::string v);
 
+    // main entry point for running paxos Receive service
     grpc::Status Start(int seq, std::string v);
 
     int Min();
@@ -84,12 +85,18 @@ class PaxosServiceImpl final : public Paxos::Service {
 
     Instance* get_instance(int seq);
 
+    std::tuple<bool, std::string> propose(Instance* instance, int seq);
+
+    bool request_accept(Instance* instance, int seq, std::string v);
+
+    void decide(int seq, std::string v);
+
 
     // below are list of fields in PaxosServiceImpl class,
     // corresponding to line 34-39 in paxos.go
 
     /* TODO: will implement in later version
-    bool                     dead; // dead
+
     bool                     unreliable; // unreliable
     int                      rpc_count; // rpcCount
     int                      max_seq; // maxSeq
@@ -100,6 +107,8 @@ class PaxosServiceImpl final : public Paxos::Service {
     std::vector<std::unique_ptr<Paxos::Stub>> peers; // peers
     int me; // me
     mutable std::shared_mutex mu; // mu
+    mutable std::shared_mutex acceptor_lock; // acceptorLock
+    bool dead; // dead
     // std::shared_mutex        acceptor_mu; //acceptorLock
     std::map<int, Instance*> instances; // instances (seq -> instance)
 
