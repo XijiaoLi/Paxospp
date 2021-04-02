@@ -29,9 +29,7 @@ std::vector<std::unique_ptr<Paxos::Stub>> make_stubs(int replica_size, std::vect
   return peers;
 }
 
-
 // ----------------------- PaxosServiceImpl Function -----------------------
-
 
 PaxosServiceImpl::PaxosServiceImpl(int replica_size, std::vector<std::shared_ptr<grpc::Channel>> channels, int me)
   : peers(std::move(make_stubs(replica_size, channels))), me(me), dead(false) {}
@@ -50,48 +48,6 @@ grpc::Status PaxosServiceImpl::Ping(ServerContext* context, const EmptyMessage* 
 }
 
 
-/* SimpleReceive service for testing */
-grpc::Status PaxosServiceImpl::SimpleReceive(ServerContext* context, const Proposal* proposal, Response* response)
-{
-  std::string type = proposal->type();
-  int n = proposal->proposed_num();
-  int seq = proposal->seq();
-  std::string value = proposal->value();
-  int peer = proposal->me();
-  int peer_done = proposal->done();
-
-  std::cout << "Server " << me << " received from Client " << peer
-            << "\n\t type = " << type << ", n = " << n
-            << ", seq = " << seq << ", val = " << value
-            << std::endl;
-
-  std::map<int, Instance*>::iterator it;
-
-  it = instances.find(seq);
-  if (it != instances.end()) {
-    Instance* ins_prt = it->second;
-    std::cout << "\t initial value is " << ins_prt->vd << ", new val is " << value << std::endl;
-    ins_prt->vd = value;
-  } else {
-    Instance* ins_prt;
-    ins_prt = (Instance*)malloc( sizeof( Instance ) );
-    ins_prt->vd = value;
-    std::cout << "\t initial value is null, new val is " << value << std::endl;
-    instances[seq] = ins_prt;
-  }
-
-  response->set_type("server message");
-  response->set_approved(true);
-  response->set_number(n);
-  response->set_value(value);
-  response->set_me(me);
-  response->set_done(0);
-
-  return grpc::Status::OK;
-}
-
-
-/* TODO: implement later */
 /* Receive service for communication between paxos peers */
 grpc::Status PaxosServiceImpl::Receive(ServerContext* context, const Proposal* proposal, Response* response)
 {
@@ -141,50 +97,6 @@ grpc::Status PaxosServiceImpl::Receive(ServerContext* context, const Proposal* p
 }
 
 
-/* entry point for running SimpleReceive service */
-grpc::Status PaxosServiceImpl::SimpleStart(int seq, std::string v)
-{
-  int count = 0;
-  for (const auto& stub : peers) {
-    ClientContext context;
-
-    Proposal proposal;
-    proposal.set_type("client message");
-    proposal.set_proposed_num(count);
-    proposal.set_seq(seq);
-    proposal.set_value(v);
-    proposal.set_me(me);
-    proposal.set_done(0);
-
-    Response response;
-
-    std::cout << "Client " << me << " sent to Peer " << count << std::endl;
-
-    grpc::Status status = stub->SimpleReceive(&context, proposal, &response);
-
-    if (!status.ok()) {
-      std::cout << "Client " << me << " received from Peer " << count << " FAILED!" << std::endl;
-    } else {
-      std::string type = response.type();
-      bool approved = response.approved();
-      int n = response.number();
-      std::string value = response.value();
-      int peer = response.me();
-      int peer_done = response.done();
-
-      std::cout << "Client " << me << " received from Peer " << count << " with me = " << peer
-                << "\n\t type = " << type << ", n = " << n
-                << ", seq = " << seq << ", val = " << value
-                << std::endl;
-    }
-
-    count ++;
-
-  }
-  return grpc::Status::OK;
-}
-
-
 Instance* PaxosServiceImpl::get_instance(int seq)
 {
   std::unique_lock<std::shared_mutex> lock(mu);
@@ -204,7 +116,6 @@ Instance* PaxosServiceImpl::get_instance(int seq)
 }
 
 
-/* TODO: implement later */
 std::tuple<bool, std::string> PaxosServiceImpl::propose(Instance* instance, int seq)
 {
   int count = 0;
@@ -266,7 +177,6 @@ std::tuple<bool, std::string> PaxosServiceImpl::propose(Instance* instance, int 
 }
 
 
-/* TODO: implement later */
 bool PaxosServiceImpl::request_accept(Instance* instance, int seq, std::string v)
 {
   int highest_np = (instance->p).np;
@@ -315,7 +225,6 @@ bool PaxosServiceImpl::request_accept(Instance* instance, int seq, std::string v
 }
 
 
-/* TODO: implement later */
 void PaxosServiceImpl::decide(int seq, std::string v)
 {
   std::vector<bool> records (peers.size(), false);
@@ -363,7 +272,6 @@ void PaxosServiceImpl::decide(int seq, std::string v)
       }
     }
   }
-
   return;
 }
 
@@ -398,5 +306,92 @@ grpc::Status PaxosServiceImpl::Start(int seq, std::string v)
 		decide(seq, v);
 		break;
 	}
+  return grpc::Status::OK;
+}
+
+
+// --------------------------- Testing Function ---------------------------
+
+/* SimpleReceive service for testing */
+grpc::Status PaxosServiceImpl::SimpleReceive(ServerContext* context, const Proposal* proposal, Response* response)
+{
+  std::string type = proposal->type();
+  int n = proposal->proposed_num();
+  int seq = proposal->seq();
+  std::string value = proposal->value();
+  int peer = proposal->me();
+  int peer_done = proposal->done();
+
+  std::cout << "Server " << me << " received from Client " << peer
+            << "\n\t type = " << type << ", n = " << n
+            << ", seq = " << seq << ", val = " << value
+            << std::endl;
+
+  std::map<int, Instance*>::iterator it;
+
+  it = instances.find(seq);
+  if (it != instances.end()) {
+    Instance* ins_prt = it->second;
+    std::cout << "\t initial value is " << ins_prt->vd << ", new val is " << value << std::endl;
+    ins_prt->vd = value;
+  } else {
+    Instance* ins_prt;
+    ins_prt = (Instance*)malloc( sizeof( Instance ) );
+    ins_prt->vd = value;
+    std::cout << "\t initial value is null, new val is " << value << std::endl;
+    instances[seq] = ins_prt;
+  }
+
+  response->set_type("server message");
+  response->set_approved(true);
+  response->set_number(n);
+  response->set_value(value);
+  response->set_me(me);
+  response->set_done(0);
+
+  return grpc::Status::OK;
+}
+
+
+/* entry point for running SimpleReceive service */
+grpc::Status PaxosServiceImpl::SimpleStart(int seq, std::string v)
+{
+  int count = 0;
+  for (const auto& stub : peers) {
+    ClientContext context;
+
+    Proposal proposal;
+    proposal.set_type("client message");
+    proposal.set_proposed_num(count);
+    proposal.set_seq(seq);
+    proposal.set_value(v);
+    proposal.set_me(me);
+    proposal.set_done(0);
+
+    Response response;
+
+    std::cout << "Client " << me << " sent to Peer " << count << std::endl;
+
+    grpc::Status status = stub->SimpleReceive(&context, proposal, &response);
+
+    if (!status.ok()) {
+      std::cout << "Client " << me << " received from Peer " << count << " FAILED!" << std::endl;
+    } else {
+      std::string type = response.type();
+      bool approved = response.approved();
+      int n = response.number();
+      std::string value = response.value();
+      int peer = response.me();
+      int peer_done = response.done();
+
+      std::cout << "Client " << me << " received from Peer " << count << " with me = " << peer
+                << "\n\t type = " << type << ", n = " << n
+                << ", seq = " << seq << ", val = " << value
+                << std::endl;
+    }
+
+    count ++;
+
+  }
   return grpc::Status::OK;
 }

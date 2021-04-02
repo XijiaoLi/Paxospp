@@ -5,11 +5,11 @@
 #include <iostream>
 #include <memory>
 #include <string> // std::string
-// #include <any> // std::any
 #include <map> // std::map
-// #include <tuple> // std::tuple
+#include <tuple> // std::tuple
 #include <mutex>  // std::unique_lock
 #include <shared_mutex> //std::shared_mutex
+// #include <any> // std::any
 
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
@@ -69,34 +69,21 @@ class PaxosServiceImpl final : public Paxos::Service {
 
     int Min();
 
-    /* TODO: will implement in later version
-    grpc::Status Receive(ServerContext* context, const Proposal* proposal, Response* response) override;
-    */
-
   private:
 
-    // *Instance get_instance(int seq);
-    // std::tuple<bool, std::any> propose(*Instance instance, int seq);
-    // bool request_accept(*Instance instance, int seq, std::any value);
-    // void decide(int seq, std::any value);
     // MetaData init_meta();
     // void update_meta(MetaData meta);
     // void clean_done_values();
 
     Instance* get_instance(int seq);
-
     std::tuple<bool, std::string> propose(Instance* instance, int seq);
-
     bool request_accept(Instance* instance, int seq, std::string v);
-
     void decide(int seq, std::string v);
-
 
     // below are list of fields in PaxosServiceImpl class,
     // corresponding to line 34-39 in paxos.go
 
     /* TODO: will implement in later version
-
     bool                     unreliable; // unreliable
     int                      rpc_count; // rpcCount
     int                      max_seq; // maxSeq
@@ -109,7 +96,6 @@ class PaxosServiceImpl final : public Paxos::Service {
     mutable std::shared_mutex mu; // mu
     mutable std::shared_mutex acceptor_lock; // acceptorLock
     bool dead; // dead
-    // std::shared_mutex        acceptor_mu; //acceptorLock
     std::map<int, Instance*> instances; // instances (seq -> instance)
 
 };
