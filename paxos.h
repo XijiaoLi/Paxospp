@@ -6,9 +6,10 @@
 #include <memory>
 #include <string> // std::string
 // #include <any> // std::any
-// #include <map> // std::map
+#include <map> // std::map
 // #include <tuple> // std::tuple
-// #include <mutex> // std::shared_mutex
+#include <mutex>  // std::unique_lock
+#include <shared_mutex> //std::shared_mutex
 
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
@@ -38,7 +39,7 @@ using paxos::EmptyMessage;
 // };
 
 struct Instance {
-  // std::shared_mutex mu; // mu
+  std::shared_mutex mu; // mu
   // Proposer p; // proposer
   // Acceptor a; // acceptor
   std::string vd; // decidedValue
@@ -65,6 +66,8 @@ class PaxosServiceImpl final : public Paxos::Service {
 
     grpc::Status Start(int seq, std::string v);
 
+    int Min();
+
     /* TODO: will implement in later version
     grpc::Status Receive(ServerContext* context, const Proposal* proposal, Response* response) override;
     */
@@ -78,13 +81,14 @@ class PaxosServiceImpl final : public Paxos::Service {
     // MetaData init_meta();
     // void update_meta(MetaData meta);
     // void clean_done_values();
-    int Min();
+
+    Instance* get_instance(int seq);
+
 
     // below are list of fields in PaxosServiceImpl class,
     // corresponding to line 34-39 in paxos.go
 
     /* TODO: will implement in later version
-    std::shared_mutex        mu;
     bool                     dead; // dead
     bool                     unreliable; // unreliable
     int                      rpc_count; // rpcCount
@@ -95,7 +99,8 @@ class PaxosServiceImpl final : public Paxos::Service {
 
     std::vector<std::unique_ptr<Paxos::Stub>> peers; // peers
     int me; // me
+    mutable std::shared_mutex mu; // mu
     // std::shared_mutex        acceptor_mu; //acceptorLock
-    std::map<int, Instance> instances; // instances (seq -> instance)
+    std::map<int, Instance*> instances; // instances (seq -> instance)
 
 };
