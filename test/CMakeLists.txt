@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.5.1)
 # Project
 project(paxos)
 
-include(./common.cmake)
+include(../common.cmake)
 
 # # Protobuf
 # set(protobuf_MODULE_COMPATIBLE TRUE)
@@ -21,7 +21,7 @@ include(./common.cmake)
 # set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:gRPC::grpc_cpp_plugin>)
 
 # Proto file
-get_filename_component(hw_proto "paxos.proto" ABSOLUTE)
+get_filename_component(hw_proto "../protos/paxos.proto" ABSOLUTE)
 get_filename_component(hw_proto_path "${hw_proto}" PATH)
 
 # Generated sources
@@ -54,8 +54,8 @@ target_link_libraries(hw_grpc_proto
   ${_PROTOBUF_LIBPROTOBUF})
 
 add_library(paxoslib
-  "paxos.cc"
-  "paxos.h")
+  "../lib/paxos.cc"
+  "../lib/paxos.h")
 target_link_libraries(paxoslib
   ${_REFLECTION}
   ${_GRPC_GRPCPP}
@@ -63,8 +63,9 @@ target_link_libraries(paxoslib
 
 # Targets (client|server)
 foreach(_target
-  server-main)
+  test)
   add_executable(${_target} "${_target}.cc")
+  target_include_directories(${_target} PRIVATE "../lib")
   target_link_libraries(${_target}
     hw_grpc_proto
     paxoslib
