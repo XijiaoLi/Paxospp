@@ -110,7 +110,7 @@ If errors and warnings were encountered when you followed exactly the scripts ab
 
 
 
-### Build and run Paxos server and client
+### Build and run Paxos server
 
 Clone this `Paxos-Cpp` repo:
 
@@ -119,7 +119,7 @@ $ https://github.com/XijiaoLi/Paxos-Cpp.git
 $ cd Paxos-Cpp
 ```
 
-Under `Paxos-Cpp` folder, run the following commands to build the excutable using `cmake`:
+Go to the `Paxos-Cpp/example/` folder, and run the following commands to build the excutable using `cmake`:
 
 ```sh
 $ mkdir -p cmake/build
@@ -128,18 +128,14 @@ $ cmake -DCMAKE_PREFIX_PATH=$MY_INSTALL_DIR ../..
 $ make -j
 ```
 
-Now you should be at **build** directory `Paxos-Cpp/cmake/build`, with all the excutables.
+Now you should be at **build** directory `Paxos-Cpp/example/cmake/build`, with the excutable `server`.
 
-1. Run the server:
+Run the server:
 
-   ```sh
-   $ ./paxos
-   Server listening on 0.0.0.0:50051
-   ```
-
-2. From a different terminal window, run the client and see the client output:
-
-   ```sh
-   $ ./paxos_client
-   Response received: seq = 1; value = hello
-   ```
+```bash
+$ ./server
+Adding 0.0.0.0:50051 to the channel list ...
+Adding 0.0.0.0:50052 to the channel list ...
+Adding 0.0.0.0:50053 to the channel list ...
+...
+```
