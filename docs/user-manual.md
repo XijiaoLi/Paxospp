@@ -1,4 +1,6 @@
-# Code Directory Introduction
+# User Manual
+
+## Code Directory Introduction
 
 **lib:** This directory includes  all head files and all implementation of Paxospp, You can figure out the working principle of Paoxspp by reading this directorys. No neccessary to read it if you are only using Paxospp.
 
@@ -8,12 +10,10 @@
 
 **examples:** This directory provides an example usage of Paoxspp.
 
-# How to Compile
+## How to Compile
 
-## Install Third Party Libs
-### CMake, gRPC and Protocol Buffers
-
-The steps in the section explain now to build and locally install gRPC and Protocol Buffers using `cmake`. If you’d rather use [bazel](https://www.bazel.build/), see [Building from source](https://github.com/grpc/grpc/blob/master/BUILDING.md#build-from-source).
+### Install Third Party Libs
+Paxospp depends on gRPC and Protocol Buffers. The steps in the section explain now to build and locally install gRPC and Protocol Buffers using `cmake`. If you’d rather use [bazel](https://www.bazel.build/), see [Building from source](https://github.com/grpc/grpc/blob/master/BUILDING.md#build-from-source).
 
 #### Setup
 
@@ -104,7 +104,7 @@ If errors and warnings were encountered when you followed exactly the scripts ab
 1. It is possible that you switched to a different dir when installing
 2. Or your system is out of memory/resources, try clean up some unused resources and follow the script again
 
-## Build and run Paxos server
+### Build and run Paxos server
 
 Clone this `Paxos-Cpp` repo:
 
@@ -134,5 +134,5 @@ Adding 0.0.0.0:50053 to the channel list ...
 ...
 ```
 
-# How to Wrap Your Own Code Around Paxospp
+## How to Wrap Your Own Code Around Paxospp
 ???
