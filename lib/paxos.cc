@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <algorithm>    // std::max
 
-#include "paxos.h"
+#include "../include/paxos.h"
 
 using grpc::Server;
 using grpc::ServerBuilder;

@@ -1,14 +1,5 @@
 # User Manual
 
-## Code Directory Introduction
-
-**lib:** This directory includes  all head files and all implementation of Paxospp, You can figure out the working principle of Paoxspp by reading this directorys. No neccessary to read it if you are only using Paxospp.
-
-**protos**: This directory includes all proto files required by gRPC communication.
-
-**test:** This directory includes all the test codes and test datasets.
-
-**examples:** This directory provides an example usage of Paoxspp.
 
 ## How to Compile
 
@@ -118,8 +109,14 @@ Go to the `Paxos-Cpp/example/` folder, and run the following commands to build t
 ```sh
 $ mkdir -p cmake/build
 $ pushd cmake/build
-$ cmake -DCMAKE_PREFIX_PATH=$MY_INSTALL_DIR ../..
+$ cmake -DCMAKE_PREFIX_PATH=$MY_INSTALL_DIR ../../test  
 $ make -j
+```
+Note: the last parameter of the cmake command is the directory contains the CMakeLists.txt. If Errors saying the CMakeLists.txt doesn't match, do the following and run the above commands again:
+
+```sh
+$ cd ../..
+$ rm -r cmake/build
 ```
 
 Now you should be at **build** directory `Paxos-Cpp/example/cmake/build`, with the excutable `server`.
