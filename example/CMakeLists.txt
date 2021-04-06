@@ -55,7 +55,7 @@ target_link_libraries(hw_grpc_proto
 
 add_library(paxoslib
   "../lib/paxos.cc"
-  "../lib/paxos.h")
+  "../include/paxos.h")
 target_link_libraries(paxoslib
   ${_REFLECTION}
   ${_GRPC_GRPCPP}

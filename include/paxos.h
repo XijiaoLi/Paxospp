@@ -66,8 +66,8 @@ class PaxosServiceImpl final : public Paxos::Service {
 
     // main entry point for running paxos Receive service
     grpc::Status Start(int seq, std::string v);
+    void status(bool &decided, std::string &v, int seq);
 
-    int Min();
 
   private:
 

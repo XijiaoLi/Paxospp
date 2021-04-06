@@ -6,11 +6,13 @@
 #include <utility>
 #include <vector>
 #include <unistd.h>
+#include <random>
+#include <assert.h>
 
 
 #include <google/protobuf/text_format.h>
 #include <grpcpp/grpcpp.h>
-#include "paxos.h"
+#include "../include/paxos.h"
 
 using google::protobuf::TextFormat;
 using paxos::Paxos;
@@ -30,7 +32,6 @@ std::unique_ptr<grpc::Server> initialize_service(const std::string& server_addre
   // assemble the server
   std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
   // wait for the server to shutdown
-  // server->Wait();
 
   std::cout << "Paxos is now listening on: " << server_address << std::endl;
   return std::move(server);
@@ -73,12 +74,12 @@ std::vector<std::shared_ptr<grpc::Channel>> make_channels(int replica_size, cons
 // }
 int make_paxos_services(int replica_size, const std::vector<std::string>& addr_v, std::vector<std::shared_ptr<grpc::Channel>> channels)
 {
-  std::vector<std::shared_ptr<PaxosServiceImpl>> pxs;
+  std::vector<std::unique_ptr<PaxosServiceImpl>> pxs;
   std::vector<std::thread> pxs_threads;
   std::vector<std::unique_ptr<grpc::Server>> servers;
   for (int i = 0; i < replica_size; ++i) {
     std::cout << i << " start" << std::endl;
-    std::shared_ptr<PaxosServiceImpl> paxos_service = std::unique_ptr<PaxosServiceImpl>(new PaxosServiceImpl(replica_size,channels, i));
+    std::unique_ptr<PaxosServiceImpl> paxos_service = std::unique_ptr<PaxosServiceImpl>(new PaxosServiceImpl(replica_size,channels, i));
     std::unique_ptr<grpc::Server> paxos_server = initialize_service(addr_v[i], paxos_service.get());
     std::thread paxos_thread(start_service, paxos_server.get()); // If not stored, paxos_server will be destructed every time after the loop
     pxs_threads.push_back(std::move(paxos_thread));
@@ -103,19 +104,27 @@ int make_paxos_services(int replica_size, const std::vector<std::string>& addr_v
 
 }
 
-int main(int argc, char** argv) {
+std::string random_number(){
   // random number seed
   srand(time(nullptr));
 
+  auto randomNum = rand();
+  return std::to_string(randomNum);
+
+}
+
+int test_basic_put(){
+   // random number seed
+  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+  std::default_random_engine generator(seed);
+  std::uniform_int_distribution<int> distribution(0, 500000);
+  auto random = std::bind(distribution, generator);
+  
   // parameters
   int replica_size = 3;
 
   std::vector<std::string> addr_v {"0.0.0.0:50051", "0.0.0.0:50052", "0.0.0.0:50053" };
   std::vector<std::shared_ptr<grpc::Channel>> channels = make_channels(replica_size, addr_v);
-
-  // ----------------------  auto/loop creation of the paxos service----------------------  
-  // make_paxos_services(replica_size, addr_v, channels);
-
   // ----------------------  manutal creation of the paxos service----------------------
   PaxosServiceImpl paxos_0(replica_size, channels, 0);
   std::unique_ptr<grpc::Server> paxos_server_0 = initialize_service(addr_v[0], &paxos_0);
@@ -129,13 +138,40 @@ int main(int argc, char** argv) {
   std::unique_ptr<grpc::Server> paxos_server_2 = initialize_service(addr_v[2], &paxos_2);
   std::thread paxos_thread_2(start_service, paxos_server_2.get());
 
-  grpc::Status put_status = paxos_1.Start(1, "put");
-  usleep(5000000);
-  put_status = paxos_2.Start(2, "get");
+  std::string num1 = std::to_string(random());
+  std::string num2 = std::to_string(random());
 
+  std::cout << "num1:" << num1 << " num2:" << num2 << std::endl;
+  grpc::Status put_status = paxos_1.Start(1, num1);
+  put_status = paxos_2.Start(2, num2);
+  put_status = paxos_2.Start(2, std::to_string(random()));
+
+  bool decided0, decided1, decided2; 
+  std::string val0, val1, val2;
+  paxos_0.status(decided0,val0,2);
+  paxos_1.status(decided1,val1,2);
+  paxos_2.status(decided2,val2,2);
+
+  assert(decided0 == decided1 && val0 == val1 && "s0 and s1 agree");
+  assert(decided1 == decided2 && val1 == val2 && "s1 and s2 agree");
+  std::cout << "=============" << val0 << " is decided among three servers\n";
+  
   paxos_thread_0.join();
   paxos_thread_1.join();
   paxos_thread_2.join();
+  usleep(200000);
   
   return 0;
+
+}
+
+int main(int argc, char** argv) {
+  
+  test_basic_put();
+  
+
+  // ----------------------  auto/loop creation of the paxos service----------------------  
+  // make_paxos_services(replica_size, addr_v, channels);
+
+  
 }

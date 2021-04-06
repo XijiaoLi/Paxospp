@@ -34,12 +34,6 @@ std::vector<std::unique_ptr<Paxos::Stub>> make_stubs(int replica_size, std::vect
 PaxosServiceImpl::PaxosServiceImpl(int replica_size, std::vector<std::shared_ptr<grpc::Channel>> channels, int me)
   : peers(std::move(make_stubs(replica_size, channels))), me(me), dead(false) {}
 
-/* TODO: implement later */
-int PaxosServiceImpl::Min()
-{
-  return 0;
-}
-
 
 /* Ping service for checking aliveness */
 grpc::Status PaxosServiceImpl::Ping(ServerContext* context, const EmptyMessage* request, EmptyMessage* response)
@@ -94,6 +88,24 @@ grpc::Status PaxosServiceImpl::Receive(ServerContext* context, const Proposal* p
     response->set_approved(true);
   }
   return grpc::Status::OK;
+}
+
+void PaxosServiceImpl::status(bool &decided, std::string &v, int seq)
+{
+  std::map<int, Instance*>::iterator it;
+  Instance* instance;
+
+  it = instances.find(seq);
+  if (it != instances.end()) {
+    instance = it->second;
+    decided = true;
+    v = instance->vd;
+
+  }else {
+    decided = false;
+    v = "";
+  }
+  return;
 }
 
 
@@ -175,6 +187,8 @@ std::tuple<bool, std::string> PaxosServiceImpl::propose(Instance* instance, int 
 	}
 
 }
+
+
 
 
 bool PaxosServiceImpl::request_accept(Instance* instance, int seq, std::string v)
@@ -278,10 +292,6 @@ void PaxosServiceImpl::decide(int seq, std::string v)
 
 grpc::Status PaxosServiceImpl::Start(int seq, std::string v)
 {
-  if (seq < Min()) {
-		return grpc::Status(grpc::StatusCode::ABORTED, "Aborted: seq num is too low.");
-	}
-
   Instance* instance = get_instance(seq);
   // instance.mu.Lock()
 	// defer instance.mu.Unlock()
