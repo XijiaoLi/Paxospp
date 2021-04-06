@@ -31,6 +31,7 @@ std::vector<std::unique_ptr<Paxos::Stub>> make_stubs(int replica_size, std::vect
 
 // ----------------------- PaxosServiceImpl Function -----------------------
 
+/* Constructor */
 PaxosServiceImpl::PaxosServiceImpl(int replica_size, std::vector<std::shared_ptr<grpc::Channel>> channels, int me)
   : peers(std::move(make_stubs(replica_size, channels))), me(me), dead(false) {}
 
@@ -90,22 +91,29 @@ grpc::Status PaxosServiceImpl::Receive(ServerContext* context, const Proposal* p
   return grpc::Status::OK;
 }
 
-void PaxosServiceImpl::status(bool &decided, std::string &v, int seq)
+
+/* Check whether a peer thinks an instance has been decided,
+   and if so what the agreed value is. Should just inspect
+   the local peer state; it should not contact other peers. */
+std::tuple<bool, std::string> PaxosServiceImpl::Status(int seq)
 {
+  bool decided;
+  std::string val;
+
   std::map<int, Instance*>::iterator it;
   Instance* instance;
 
   it = instances.find(seq);
   if (it != instances.end()) {
-    instance = it->second;
     decided = true;
-    v = instance->vd;
-
-  }else {
+    instance = it->second;
+    val = instance->vd;
+  } else {
     decided = false;
-    v = "";
+    val = "";
   }
-  return;
+
+  return std::make_tuple(decided, val);
 }
 
 
