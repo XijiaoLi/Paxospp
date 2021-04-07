@@ -17,10 +17,6 @@
 using google::protobuf::TextFormat;
 using paxos::Paxos;
 
-void square(int x) {
-    int accum = x * x;
-    std::cout << "acc: " << accum << std::endl;
-}
 
 std::unique_ptr<grpc::Server> initialize_service(const std::string& server_address, grpc::Service* service)
 {
@@ -37,12 +33,17 @@ std::unique_ptr<grpc::Server> initialize_service(const std::string& server_addre
   return std::move(server);
 }
 
+void shutdown_service(grpc::Server* server){
+  server->Shutdown();
+  std::cout << "wait for the server to shutdown..." << std::endl;
+}
+
 
 void start_service(grpc::Server* server)
 {
-  // wait for the server to shutdown
+  // wait for the server to start
   server->Wait();
-  std::cout << "wait for the server to shutdown..." << std::endl;
+  std::cout << "wait for the server to start..." << std::endl;
 }
 
 
@@ -61,7 +62,7 @@ std::vector<std::shared_ptr<grpc::Channel>> make_channels(int replica_size, cons
 }
 
 
-int make_paxos_services(int replica_size, const std::vector<std::string>& addr_v, std::vector<std::shared_ptr<grpc::Channel>> channels)
+void test_heavy_put(int replica_size, const std::vector<std::string>& addr_v, std::vector<std::shared_ptr<grpc::Channel>> channels, int put_size)
 {
   std::vector<std::unique_ptr<PaxosServiceImpl>> pxs;
   std::vector<std::thread> pxs_threads;
@@ -80,29 +81,41 @@ int make_paxos_services(int replica_size, const std::vector<std::string>& addr_v
     std::cout << i << " ok" << std::endl;
   }
 
-  grpc::Status put_status = pxs.at(1)->Start(1,"put"); // use at as a reference
-  usleep(5000000);
-  put_status = pxs.at(2)->Start(2, "get");
+  // random number seed
+  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+  std::default_random_engine generator(seed);
+  std::uniform_int_distribution<int> distribution(0, 500000);
+  auto random = std::bind(distribution, generator);
 
+  // heavy put 
+  for (int i = 0; i < put_size; i++){
+    int server_num = random()%replica_size;
+    grpc::Status put_status = pxs.at(server_num)->Start(i, std::to_string(random()));
+  }
 
+  // check all saved values
+  for (int i = 0; i < put_size; i++){
+    auto [ decided_0, val_0 ] = pxs.at(0)->Status(i);
+    for (int j = 1; j < replica_size; j++){
+      auto [ decided_1, val_1 ] = pxs.at(j)->Status(i);
+      assert(decided_0 && decided_1 && val_0 == val_1 );
+    }
+  }
+
+  // shut down
+  for (int i = 0; i < replica_size; i++) {
+    shutdown_service(servers.at(i).get());
+  }
+
+  // continue to listen
   for (int i = 0; i < replica_size; i++) {
     pxs_threads[i].join();
     std::cout << i << " joined" << std::endl;
   }
 
-  std::cout << "finished" << std::endl;
-  return 0;
-
+  std::cout << "----------------Test_heavy_put: Passed" << std::endl;
 }
 
-std::string random_number(){
-  // random number seed
-  srand(time(nullptr));
-
-  auto randomNum = rand();
-  return std::to_string(randomNum);
-
-}
 
 void test_basic_put(){
    // random number seed
@@ -143,19 +156,29 @@ void test_basic_put(){
 
   assert(decided_0 == decided_1 && val_0 == val_1 && "s0 and s1 agree");
   assert(decided_1 == decided_2 && val_1 == val_2 && "s1 and s2 agree");
-  std::cout << "=============" << val_0 << " is decided among three servers\n";
 
+  shutdown_service(paxos_server_0.get());
+  shutdown_service(paxos_server_1.get());
+  shutdown_service(paxos_server_2.get());
+
+  paxos_thread_0.join();
+  paxos_thread_1.join();
+  paxos_thread_2.join();
+  
+  std::cout << "----------------Test_basic_put: Passed" << std::endl;
   return;
-
 }
+
 
 int main(int argc, char** argv) {
 
   test_basic_put();
 
-
-  // ----------------------  auto/loop creation of the paxos service----------------------
-  // make_paxos_services(replica_size, addr_v, channels);
+  int replica_size = 3;
+  int put_size = 100;
+  std::vector<std::string> addr_v {"0.0.0.0:50051", "0.0.0.0:50052", "0.0.0.0:50053" };
+  std::vector<std::shared_ptr<grpc::Channel>> channels = make_channels(replica_size, addr_v);
+  test_heavy_put(replica_size, addr_v, channels, put_size);
 
 
 }
