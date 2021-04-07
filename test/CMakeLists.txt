@@ -6,20 +6,6 @@ project(paxos)
 
 include(../common.cmake)
 
-# # Protobuf
-# set(protobuf_MODULE_COMPATIBLE TRUE)
-# find_package(Protobuf CONFIG REQUIRED)
-# message(STATUS "Using protobuf ${protobuf_VERSION}")
-#
-# # Protobuf-compiler
-# set(_PROTOBUF_PROTOC $<TARGET_FILE:protobuf::protoc>)
-#
-# # gRPC
-# find_package(gRPC CONFIG REQUIRED)
-# message(STATUS "Using gRPC ${gRPC_VERSION}")
-# set(_GRPC_GRPCPP gRPC::grpc++)
-# set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:gRPC::grpc_cpp_plugin>)
-
 # Proto file
 get_filename_component(hw_proto "../protos/paxos.proto" ABSOLUTE)
 get_filename_component(hw_proto_path "${hw_proto}" PATH)
@@ -41,6 +27,7 @@ add_custom_command(
 
 # Include generated *.pb.h files
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+include_directories("../include")
 
 # hw_grpc_proto
 add_library(hw_grpc_proto
@@ -57,17 +44,16 @@ add_library(paxoslib
   "../src/paxos.cc"
   "../include/paxos.h")
 target_link_libraries(paxoslib
+  hw_grpc_proto
   ${_REFLECTION}
   ${_GRPC_GRPCPP}
   ${_PROTOBUF_LIBPROTOBUF})
 
-# Targets (client|server)
+# Targets (test)
 foreach(_target
   test)
   add_executable(${_target} "${_target}.cc")
-  # target_include_directories(${_target} PRIVATE "../lib")
   target_link_libraries(${_target}
-    hw_grpc_proto
     paxoslib
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
