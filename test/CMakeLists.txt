@@ -65,7 +65,7 @@ target_link_libraries(paxoslib
 foreach(_target
   test)
   add_executable(${_target} "${_target}.cc")
-  target_include_directories(${_target} PRIVATE "../lib")
+  # target_include_directories(${_target} PRIVATE "../lib")
   target_link_libraries(${_target}
     hw_grpc_proto
     paxoslib

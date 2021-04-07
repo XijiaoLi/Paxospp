@@ -1,6 +1,5 @@
 #ifndef PAXOS_H
 #define PAXOS_H
-#endif
 
 #include <iostream>
 #include <memory>
@@ -100,3 +99,5 @@ class PaxosServiceImpl final : public Paxos::Service {
     std::map<int, Instance*> instances; // instances (seq -> instance)
 
 };
+
+#endif
