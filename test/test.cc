@@ -12,7 +12,7 @@
 
 #include <google/protobuf/text_format.h>
 #include <grpcpp/grpcpp.h>
-#include "../include/paxos.h"
+#include "paxos.h"
 
 using google::protobuf::TextFormat;
 using paxos::Paxos;
