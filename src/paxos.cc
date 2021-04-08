@@ -32,11 +32,17 @@ std::vector<std::unique_ptr<Paxos::Stub>> make_stubs(int peers_num, std::vector<
 // --------------------- PaxosServiceImpl Public Function ----------------------
 
 /* Constructor */
+PaxosServiceImpl::PaxosServiceImpl(int peers_num, std::vector<std::shared_ptr<grpc::Channel>> channels, int me, bool debug)
+  : peers_num(peers_num), peers(std::move(make_stubs(peers_num, channels))), me(me), dead(false), initialized{true}, debug(debug) {}
+
+PaxosServiceImpl::PaxosServiceImpl(int peers_num, std::vector<std::string> peers_addr, int me, bool debug)
+  : peers_num(peers_num), peers_addr(peers_addr), me(me), dead(false), initialized(false), debug(debug) {}
+
 PaxosServiceImpl::PaxosServiceImpl(int peers_num, std::vector<std::shared_ptr<grpc::Channel>> channels, int me)
-  : peers_num(peers_num), peers(std::move(make_stubs(peers_num, channels))), me(me), dead(false), initialized{true} {}
+  : peers_num(peers_num), peers(std::move(make_stubs(peers_num, channels))), me(me), dead(false), initialized{true}, debug(false) {}
 
 PaxosServiceImpl::PaxosServiceImpl(int peers_num, std::vector<std::string> peers_addr, int me)
-  : peers_num(peers_num), peers_addr(peers_addr), me(me), dead(false), initialized(false) {}
+  : peers_num(peers_num), peers_addr(peers_addr), me(me), dead(false), initialized(false), debug(false) {}
 
 
 /* Shut down the server */
@@ -64,7 +70,9 @@ void PaxosServiceImpl::InitializeService()
     // assemble the server
     server = std::move(builder.BuildAndStart());
     // wait for the server to shutdown
-    std::cout << "Paxos is now listening on: " << peers_addr[me] << std::endl;
+    if (debug){
+      std::cout << "Paxos is now listening on: " << peers_addr[me] << std::endl;
+    }
 
     // construct channels and stubs
     for (int i = 0; i < peers_num; ++i) {
@@ -73,7 +81,9 @@ void PaxosServiceImpl::InitializeService()
       std::unique_ptr<Paxos::Stub> peer_i = std::make_unique<Paxos::Stub>(channel_i);
       channels.push_back(std::move(channel_i));
       peers.push_back(std::move(peer_i));
-      std::cout << "Adding peer " << i << " to the channel/stub list ..." << std::endl;
+      if (debug){
+        std::cout << "Adding peer " << i << " to the channel/stub list ..." << std::endl;
+      }
     }
   }
 
@@ -134,9 +144,11 @@ grpc::Status PaxosServiceImpl::Receive(ServerContext* context, const Proposal* p
 		}
   } else if (type.compare("DECIDE") == 0) {
 
-    std::cout << "SPaxos " << me << " from CPaxos " << peer
+    if (debug){
+        std::cout << "SPaxos " << me << " from CPaxos " << peer
               << "\n\t DECIDE (seq, val) = (" << seq << ", " << value << ")"
               << " from initial value \'" << instance->vd << "\'" << std::endl;
+    }
 
     instance->vd = value;
     response->set_approved(true);
@@ -164,13 +176,14 @@ std::tuple<bool, std::string> PaxosServiceImpl::Status(int seq)
     decided = true;
     instance = it->second;
     val = instance->vd;
-    std::cout << me << "-" << "True" << ":" << val << std::endl;
     decided = val.compare("") != 0 ? true : false;
   } else {
     decided = false;
     val = "";
-    std::cout << me << "-" << "False" << ":" << val << std::endl;
-    
+  }
+  if (debug){
+    std::string decided_print = decided == true ? "True":"False";
+    std::cout << me << "-" << decided << ":" << val << std::endl;
   }
   return std::make_tuple(decided, val);
 }
@@ -188,7 +201,9 @@ grpc::Status PaxosServiceImpl::Start(int seq, std::string v)
 /* Inner function for starting service */
 void PaxosServiceImpl::start_service()
 {
-  std::cout << "Wait for the server to shutdown..." << std::endl;
+  if (debug){
+     std::cout << "Wait for the server to shutdown..." << std::endl;
+  }
   server->Wait();
 }
 
@@ -264,8 +279,9 @@ std::tuple<bool, std::string> PaxosServiceImpl::propose(Instance* instance, int 
 
     // reply := Response{}
     Response response;
-
-    std::cout << "CPaxos " << me << " sent PROPOSE to SPaxos " << i << std::endl;
+    if (debug){
+      std::cout << "CPaxos " << me << " sent PROPOSE to SPaxos " << i << std::endl;
+    }
 
     grpc::Status status = stub->Receive(&context, proposal, &response);
     // if !flag { continue }
@@ -324,7 +340,9 @@ bool PaxosServiceImpl::request_accept(Instance* instance, int seq, std::string v
     // reply := Response{}
     Response response;
 
-    std::cout << "CPaxos " << me << " sent ACCEPT to SPaxos " << i << std::endl;
+    if (debug){
+      std::cout << "CPaxos " << me << " sent ACCEPT to SPaxos " << i << std::endl;
+    }
 
     grpc::Status status = stub->Receive(&context, proposal, &response);
 

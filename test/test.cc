@@ -18,8 +18,6 @@ using google::protobuf::TextFormat;
 using paxos::Paxos;
 
 
-
-
 std::vector<std::shared_ptr<grpc::Channel>> make_channels(int peers_num, const std::vector<std::string>& addr_v)
 {
   std::vector<std::shared_ptr<grpc::Channel>> channels; // a list of channels
