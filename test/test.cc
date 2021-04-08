@@ -184,6 +184,7 @@ int main(int argc, char** argv) {
   paxos_0.InitializeService();
   paxos_0.StartService();
   paxos_0.Start(1, "one");
+  paxos_0.Start(2, "two");
 
 
 }

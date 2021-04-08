@@ -9,7 +9,7 @@
 #include <thread> // std::thread
 #include <mutex>  // std::unique_lock
 #include <shared_mutex> //std::shared_mutex
-// #include <any> // std::any
+#include <future> // std::future
 
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
@@ -60,14 +60,8 @@ class PaxosServiceImpl final : public Paxos::Service {
     // test if the server is available
     grpc::Status Ping(ServerContext* context, const EmptyMessage* request, EmptyMessage* response) override;
 
-    // store anything in the proposal
-    grpc::Status SimpleReceive(ServerContext* context, const Proposal* proposal, Response* response) override;
-
     // paxos service
     grpc::Status Receive(ServerContext* context, const Proposal* proposal, Response* response) override;
-
-    // main entry point for running SimpleReceive service
-    grpc::Status SimpleStart(int seq, std::string v);
 
     // main entry point for running paxos Receive service
     grpc::Status Start(int seq, std::string v);
@@ -77,6 +71,7 @@ class PaxosServiceImpl final : public Paxos::Service {
 
   private:
     void start_service();
+    bool start(int seq, std::string v);
     Instance* get_instance(int seq);
     std::tuple<bool, std::string> propose(Instance* instance, int seq);
     bool request_accept(Instance* instance, int seq, std::string v);
@@ -105,6 +100,7 @@ class PaxosServiceImpl final : public Paxos::Service {
     bool dead; // dead
     std::map<int, Instance*> instances; // instances (seq -> instance)
     std::thread* listener;
+    std::vector<std::future<bool>> request_threads;
 
 };
 

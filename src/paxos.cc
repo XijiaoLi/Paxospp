@@ -29,7 +29,7 @@ std::vector<std::unique_ptr<Paxos::Stub>> make_stubs(int peers_num, std::vector<
   return peers;
 }
 
-// ----------------------- PaxosServiceImpl Function -----------------------
+// --------------------- PaxosServiceImpl Public Function ----------------------
 
 /* Constructor */
 PaxosServiceImpl::PaxosServiceImpl(int peers_num, std::vector<std::shared_ptr<grpc::Channel>> channels, int me)
@@ -74,12 +74,6 @@ void PaxosServiceImpl::StartService()
   listener = new std::thread([this]() {start_service();} );
 }
 
-
-void PaxosServiceImpl::start_service()
-{
-  std::cout << "Wait for the server to shutdown..." << std::endl;
-  server->Wait();
-}
 
 
 /* Ping service for checking aliveness */
@@ -160,6 +154,52 @@ std::tuple<bool, std::string> PaxosServiceImpl::Status(int seq)
   }
 
   return std::make_tuple(decided, val);
+}
+
+/* Start paxos service */
+grpc::Status PaxosServiceImpl::Start(int seq, std::string v)
+{
+  request_threads.push_back(std::async(std::launch::async,&PaxosServiceImpl::start, this, seq, v));
+  return grpc::Status::OK;
+}
+
+
+// --------------------- PaxosServiceImpl Private Function ---------------------
+
+/* Inner function for starting service */
+void PaxosServiceImpl::start_service()
+{
+  std::cout << "Wait for the server to shutdown..." << std::endl;
+  server->Wait();
+}
+
+
+/* Inner function for Start paxos */
+bool PaxosServiceImpl::start(int seq, std::string v)
+{
+  Instance* instance = get_instance(seq);
+
+  std::unique_lock<std::shared_mutex> lock(instance->mu);
+	for (;!dead;) {
+		if (!(instance->vd).empty()) {
+			break;
+		}
+		(instance->p).np++;
+		(instance->p).n = (instance->p).np;
+    auto [ ok, value ] = propose(instance, seq);
+		if (!ok) {
+			continue;
+		}
+		if (!value.empty()) {
+			v = value;
+		}
+		if (!request_accept(instance, seq, v)) {
+			continue;
+		}
+		decide(seq, v);
+		break;
+	}
+  return true;
 }
 
 
@@ -314,19 +354,17 @@ void PaxosServiceImpl::decide(int seq, std::string v)
 
       Response response;
 
-      std::cout << "CPaxos " << me << " sent DECIDE to SPaxos " << i << std::endl;
-
       grpc::Status status = stub->Receive(&context, proposal, &response);
 
       if (!status.ok()) {
-        std::cout << "CPaxos " << me << " got from SPaxos " << i << " FAILED!" << std::endl;
+        // std::cout << "CPaxos " << me << " got from SPaxos " << i << " FAILED!" << std::endl;
       } else {
         bool approved = response.approved();
         int peer = response.me();
         int peer_done = response.done();
 
-        std::cout << "CPaxos " << me << " got from SPeer " << i << " with me = " << peer
-                  << ", approved = " << approved << std::endl;
+        // std::cout << "CPaxos " << me << " got from SPeer " << i << " with me = " << peer
+        //           << ", approved = " << approved << std::endl;
 
         if (approved) {
           records[i] = true;
@@ -337,121 +375,4 @@ void PaxosServiceImpl::decide(int seq, std::string v)
     }
   }
   return;
-}
-
-
-grpc::Status PaxosServiceImpl::Start(int seq, std::string v)
-{
-  Instance* instance = get_instance(seq);
-  // instance.mu.Lock()
-	// defer instance.mu.Unlock()
-  std::unique_lock<std::shared_mutex> lock(instance->mu);
-
-	for (;!dead;) {
-		if (!(instance->vd).empty()) {
-			break;
-		}
-		(instance->p).np++;
-		(instance->p).n = (instance->p).np;
-    auto [ ok, value ] = propose(instance, seq);
-		if (!ok) {
-			continue;
-		}
-		if (!value.empty()) {
-			v = value;
-		}
-		if (!request_accept(instance, seq, v)) {
-			continue;
-		}
-		decide(seq, v);
-		break;
-	}
-  return grpc::Status::OK;
-}
-
-
-// --------------------------- Testing Function ---------------------------
-
-/* SimpleReceive service for testing */
-grpc::Status PaxosServiceImpl::SimpleReceive(ServerContext* context, const Proposal* proposal, Response* response)
-{
-  std::string type = proposal->type();
-  int n = proposal->proposed_num();
-  int seq = proposal->seq();
-  std::string value = proposal->value();
-  int peer = proposal->me();
-  int peer_done = proposal->done();
-
-  std::cout << "Server " << me << " received from Client " << peer
-            << "\n\t type = " << type << ", n = " << n
-            << ", seq = " << seq << ", val = " << value
-            << std::endl;
-
-  std::map<int, Instance*>::iterator it;
-
-  it = instances.find(seq);
-  if (it != instances.end()) {
-    Instance* ins_prt = it->second;
-    std::cout << "\t initial value is " << ins_prt->vd << ", new val is " << value << std::endl;
-    ins_prt->vd = value;
-  } else {
-    Instance* ins_prt;
-    ins_prt = (Instance*)malloc( sizeof( Instance ) );
-    ins_prt->vd = value;
-    std::cout << "\t initial value is null, new val is " << value << std::endl;
-    instances[seq] = ins_prt;
-  }
-
-  response->set_type("server message");
-  response->set_approved(true);
-  response->set_number(n);
-  response->set_value(value);
-  response->set_me(me);
-  response->set_done(0);
-
-  return grpc::Status::OK;
-}
-
-
-/* entry point for running SimpleReceive service */
-grpc::Status PaxosServiceImpl::SimpleStart(int seq, std::string v)
-{
-  int count = 0;
-  for (const auto& stub : peers) {
-    ClientContext context;
-
-    Proposal proposal;
-    proposal.set_type("client message");
-    proposal.set_proposed_num(count);
-    proposal.set_seq(seq);
-    proposal.set_value(v);
-    proposal.set_me(me);
-    proposal.set_done(0);
-
-    Response response;
-
-    std::cout << "Client " << me << " sent to Peer " << count << std::endl;
-
-    grpc::Status status = stub->SimpleReceive(&context, proposal, &response);
-
-    if (!status.ok()) {
-      std::cout << "Client " << me << " received from Peer " << count << " FAILED!" << std::endl;
-    } else {
-      std::string type = response.type();
-      bool approved = response.approved();
-      int n = response.number();
-      std::string value = response.value();
-      int peer = response.me();
-      int peer_done = response.done();
-
-      std::cout << "Client " << me << " received from Peer " << count << " with me = " << peer
-                << "\n\t type = " << type << ", n = " << n
-                << ", seq = " << seq << ", val = " << value
-                << std::endl;
-    }
-
-    count ++;
-
-  }
-  return grpc::Status::OK;
 }
