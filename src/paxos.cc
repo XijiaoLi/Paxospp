@@ -371,7 +371,7 @@ void PaxosServiceImpl::decide(int seq, std::string v)
   std::vector<bool> records (peers.size(), false);
   int count = 0;
 
-  for (; count < peers.size();) {
+  for (; count < peers_num;) {
     int i = 0;
 
     for (const auto& stub : peers) {
@@ -400,8 +400,7 @@ void PaxosServiceImpl::decide(int seq, std::string v)
         int peer = response.me();
         int peer_done = response.done();
 
-        // std::cout << "CPaxos " << me << " got from SPeer " << i << " with me = " << peer
-        //           << ", approved = " << approved << std::endl;
+        std::cout << "CPaxos " << me << " got from SPaxos " << i << ", DECIDE approved = " << approved << std::endl;
 
         if (approved) {
           records[i] = true;
@@ -411,5 +410,6 @@ void PaxosServiceImpl::decide(int seq, std::string v)
       }
     }
   }
+  std::cout << "Paxos DECIDE done " << std::endl;
   return;
 }

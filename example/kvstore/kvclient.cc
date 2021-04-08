@@ -7,6 +7,7 @@ using grpc::Status;
 using kvstore::KVStore;
 using kvstore::KVRequest;
 using kvstore::KVResponse;
+using namespace std::chrono;
 
 namespace kvstore {
 
@@ -19,8 +20,11 @@ class KVStoreClient {
     ClientContext context;
 
     KVRequest request;
+    long long ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     request.set_key(key);
     request.set_value(value);
+    request.set_timestamp(ts);
+    request.set_client_id(1);
 
     KVResponse response;
 
@@ -31,7 +35,7 @@ class KVStoreClient {
     if (status.ok()) {
       std::cout << "kvStore client received PUT " << key << " with " << value << " succeeded\n";
     } else {
-      std::cout << "kvStore client received PUT " << key << " with " << value << " failed\n";
+      std::cout << "kvStore client received PUT " << key << " failed with " << status.error_code() << "\n";
     }
 
     return response.err();
@@ -41,7 +45,10 @@ class KVStoreClient {
     ClientContext context;
 
     KVRequest request;
+    long long ts = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     request.set_key(key);
+    request.set_timestamp(ts);
+    request.set_client_id(1);
 
     KVResponse response;
 
@@ -52,7 +59,7 @@ class KVStoreClient {
     if (status.ok()) {
       std::cout << "kvStore client received GET " << key << " with " << response.value() << " succeeded\n";
     } else {
-      std::cout << "kvStore client received GET " << key << " failed\n";
+      std::cout << "kvStore client received GET " << key << " failed with " << status.error_code() << "\n";
     }
 
     return response.value();
@@ -67,7 +74,7 @@ class KVStoreClient {
 int main(int argc, char** argv) {
 
   kvstore::KVStoreClient client(grpc::CreateChannel(
-      "localhost:50051", grpc::InsecureChannelCredentials())
+      "localhost:50061", grpc::InsecureChannelCredentials())
   );
   std::string key("hello");
   std::string value("world");

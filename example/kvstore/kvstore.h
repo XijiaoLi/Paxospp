@@ -9,6 +9,7 @@
 #include <thread>
 #include <utility>
 #include <cstdlib> // int64_t
+#include <unistd.h> // usleep
 #include "paxos.h"
 
 #include <grpcpp/grpcpp.h>
@@ -44,7 +45,7 @@ struct Op {
 class KVStoreImpl final : public KVStore::Service {
   public:
 
-    KVStoreImpl(std::map<std::string, std::string> db_seeds);
+    KVStoreImpl(std::map<std::string, std::string> db_seeds, int peers_num, std::vector<std::string> peers_addr, int me);
 
     grpc::Status Get(ServerContext* context, const KVRequest* request, KVResponse* response) override;
 
@@ -61,7 +62,9 @@ class KVStoreImpl final : public KVStore::Service {
     Op get_log(int seq, Op op);
     // void auto_update();
     //
-    PaxosServiceImpl* px;
+    PaxosServiceImpl px;
+    PaxosServiceImpl px1;
+    PaxosServiceImpl px2;
     // int me; // me
     int committed_seq;
     mutable std::shared_mutex mu; // mu
