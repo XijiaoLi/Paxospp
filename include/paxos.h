@@ -50,6 +50,7 @@ class PaxosServiceImpl final : public Paxos::Service {
   public:
 
     PaxosServiceImpl(int replica_size, std::vector<std::shared_ptr<grpc::Channel>> channels, int me);
+    PaxosServiceImpl(int replica_size, std::vector<std::string> addr_v, int me);
 
     // test if the server is available
     grpc::Status Ping(ServerContext* context, const EmptyMessage* request, EmptyMessage* response) override;
@@ -68,6 +69,8 @@ class PaxosServiceImpl final : public Paxos::Service {
 
     // check a paxos peer's decision on an instance
     std::tuple<bool, std::string> Status(int seq);
+
+    bool Init();
 
   private:
 
@@ -92,11 +95,16 @@ class PaxosServiceImpl final : public Paxos::Service {
     */
 
     std::vector<std::unique_ptr<Paxos::Stub>> peers; // peers
+    std::vector<std::string> peers_addr;
     int me; // me
+    int replica_size;
+    std::vector<std::shared_ptr<grpc::Channel>> channels;
     mutable std::shared_mutex mu; // mu
     mutable std::shared_mutex acceptor_lock; // acceptorLock
     bool dead; // dead
     std::map<int, Instance*> instances; // instances (seq -> instance)
+    bool initialized;
+    std::unique_ptr<grpc::Server> server;
 
 };
 

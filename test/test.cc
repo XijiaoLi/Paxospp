@@ -151,8 +151,12 @@ void test_basic_put(){
 
 int main(int argc, char** argv) {
 
-  test_basic_put();
+  int replica_size = 3;
 
+  std::vector<std::string> addr_v {"0.0.0.0:50051", "0.0.0.0:50052", "0.0.0.0:50053" };
+  PaxosServiceImpl paxos_0(replica_size, addr_v, 0);
+  paxos_0.Init();
+  // grpc::Status put_status = paxos_1.Start(1, num1);
 
   // ----------------------  auto/loop creation of the paxos service----------------------
   // make_paxos_services(replica_size, addr_v, channels);

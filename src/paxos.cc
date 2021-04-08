@@ -33,7 +33,50 @@ std::vector<std::unique_ptr<Paxos::Stub>> make_stubs(int replica_size, std::vect
 
 /* Constructor */
 PaxosServiceImpl::PaxosServiceImpl(int replica_size, std::vector<std::shared_ptr<grpc::Channel>> channels, int me)
-  : peers(std::move(make_stubs(replica_size, channels))), me(me), dead(false) {}
+  : replica_size(replica_size), peers(std::move(make_stubs(replica_size, channels))), me(me), dead(false), initialized{true} {}
+
+
+PaxosServiceImpl::PaxosServiceImpl(int replica_size, std::vector<std::string> addr_v, int me)
+  : replica_size(replica_size), peers_addr(addr_v), me(me), dead(false), initialized(false) {}
+
+
+bool PaxosServiceImpl::Init()
+{
+  if (!initialized) {
+
+    std::cout << "Manully start server " << me << std::endl;
+    grpc::ServerBuilder builder;
+    // listen on the given address
+    builder.AddListeningPort(peers_addr[me], grpc::InsecureServerCredentials());
+    // register "service" as the instance to communicate with clients; it will corresponds to an *synchronous* service
+    builder.RegisterService(this);
+    // assemble the server
+    server = std::move(builder.BuildAndStart());
+    // wait for the server to shutdown
+    std::cout << "Paxos is now listening on: " << peers_addr[me] << std::endl;
+
+
+    // Construct channels and stubs
+    for (int i = 0; i < replica_size; ++i) {
+      // at each endpoint, create a channel for paxos to send rpc
+      std::shared_ptr<grpc::Channel> channel_i = grpc::CreateChannel(peers_addr[i], grpc::InsecureChannelCredentials());
+      channels.push_back(std::move(channel_i));
+      std::cout << "Adding peer " << i << " to the channel list ..." << std::endl;
+    }
+
+    for (int i = 0; i < replica_size; ++i) {
+      // create a stub associated with the channel
+      std::unique_ptr<Paxos::Stub> peer_i = std::make_unique<Paxos::Stub>(channels[i]);
+      peers.push_back(std::move(peer_i));
+      std::cout << "Adding peer " << i << " to the Paxos stubs list ..." << std::endl;
+    }
+
+    server->Wait();
+    std::cout << "wait for the server to shutdown..." << std::endl;
+  }
+
+  return true;
+}
 
 
 /* Ping service for checking aliveness */
