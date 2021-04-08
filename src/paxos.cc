@@ -71,6 +71,12 @@ void PaxosServiceImpl::InitializeService()
 /* Server starts to listen on the address */
 void PaxosServiceImpl::StartService()
 {
+  listener = new std::thread([this]() {start_service();} );
+}
+
+
+void PaxosServiceImpl::start_service()
+{
   std::cout << "Wait for the server to shutdown..." << std::endl;
   server->Wait();
 }

@@ -183,6 +183,7 @@ int main(int argc, char** argv) {
   PaxosServiceImpl paxos_0(peers_num, addr_v, 0);
   paxos_0.InitializeService();
   paxos_0.StartService();
+  paxos_0.Start(1, "one");
 
 
 }

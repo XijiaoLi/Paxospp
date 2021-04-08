@@ -6,6 +6,7 @@
 #include <string> // std::string
 #include <map> // std::map
 #include <tuple> // std::tuple
+#include <thread> // std::thread
 #include <mutex>  // std::unique_lock
 #include <shared_mutex> //std::shared_mutex
 // #include <any> // std::any
@@ -75,7 +76,7 @@ class PaxosServiceImpl final : public Paxos::Service {
     std::tuple<bool, std::string> Status(int seq);
 
   private:
-
+    void start_service();
     Instance* get_instance(int seq);
     std::tuple<bool, std::string> propose(Instance* instance, int seq);
     bool request_accept(Instance* instance, int seq, std::string v);
@@ -103,6 +104,7 @@ class PaxosServiceImpl final : public Paxos::Service {
     mutable std::shared_mutex acceptor_lock; // acceptorLock
     bool dead; // dead
     std::map<int, Instance*> instances; // instances (seq -> instance)
+    std::thread* listener;
 
 };
 
