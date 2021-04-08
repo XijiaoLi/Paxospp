@@ -47,7 +47,14 @@ struct Instance {
 class PaxosServiceImpl final : public Paxos::Service {
   public:
 
-    PaxosServiceImpl(int replica_size, std::vector<std::shared_ptr<grpc::Channel>> channels, int me);
+    PaxosServiceImpl(int peers_num, std::vector<std::shared_ptr<grpc::Channel>> channels, int me);
+    PaxosServiceImpl(int peers_num, std::vector<std::string> peers_addr, int me);
+
+    // initialize server, channel, stub
+    void InitializeService();
+
+    // start listening on the address
+    void StartService();
 
     // test if the server is available
     grpc::Status Ping(ServerContext* context, const EmptyMessage* request, EmptyMessage* response) override;
@@ -85,8 +92,13 @@ class PaxosServiceImpl final : public Paxos::Service {
     int                      to_clean_seq; // toCleanSeq
     */
 
-    std::vector<std::unique_ptr<Paxos::Stub>> peers; // peers
+    int peers_num;
     int me; // me
+    std::unique_ptr<grpc::Server> server;
+    std::vector<std::string> peers_addr;
+    std::vector<std::unique_ptr<Paxos::Stub>> peers; // peers
+    std::vector<std::shared_ptr<grpc::Channel>> channels; // channels
+    bool initialized;
     mutable std::shared_mutex mu; // mu
     mutable std::shared_mutex acceptor_lock; // acceptorLock
     bool dead; // dead

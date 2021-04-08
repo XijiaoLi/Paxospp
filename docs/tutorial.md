@@ -134,7 +134,7 @@ Adding 0.0.0.0:50053 to the channel list ...
 Your implementation must support this interface:
 
 ```C++
- PaxosServiceImpl paxos_0(int replica_size, std::vector<std::shared_ptr<grpc::Channel>> channels, int me); 
+ PaxosServiceImpl paxos_0(int peers_num, std::vector<std::shared_ptr<grpc::Channel>> channels, int me); 
  paxos_0.Start(int seq, std::string v); // start agreement on new instance
  std::tuple<bool, std::string> paxos_0.Status(seq int); // get info about an instance
 ```

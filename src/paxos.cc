@@ -15,11 +15,11 @@ using paxos::EmptyMessage;
 
 // ---------------------------- Helper Function ----------------------------
 
-std::vector<std::unique_ptr<Paxos::Stub>> make_stubs(int replica_size, std::vector<std::shared_ptr<grpc::Channel>> channels)
+std::vector<std::unique_ptr<Paxos::Stub>> make_stubs(int peers_num, std::vector<std::shared_ptr<grpc::Channel>> channels)
 {
   std::vector<std::unique_ptr<Paxos::Stub>> peers; // a list of stubs
 
-  for (int i = 0; i < replica_size; ++i) {
+  for (int i = 0; i < peers_num; ++i) {
     // create a stub associated with the channel
     std::unique_ptr<Paxos::Stub> peer_i = std::make_unique<Paxos::Stub>(channels[i]);
     peers.push_back(std::move(peer_i));
@@ -32,8 +32,48 @@ std::vector<std::unique_ptr<Paxos::Stub>> make_stubs(int replica_size, std::vect
 // ----------------------- PaxosServiceImpl Function -----------------------
 
 /* Constructor */
-PaxosServiceImpl::PaxosServiceImpl(int replica_size, std::vector<std::shared_ptr<grpc::Channel>> channels, int me)
-  : peers(std::move(make_stubs(replica_size, channels))), me(me), dead(false) {}
+PaxosServiceImpl::PaxosServiceImpl(int peers_num, std::vector<std::shared_ptr<grpc::Channel>> channels, int me)
+  : peers_num(peers_num), peers(std::move(make_stubs(peers_num, channels))), me(me), dead(false), initialized{true} {}
+
+PaxosServiceImpl::PaxosServiceImpl(int peers_num, std::vector<std::string> peers_addr, int me)
+  : peers_num(peers_num), peers_addr(peers_addr), me(me), dead(false), initialized(false) {}
+
+
+/* Initialize Paxos Service */
+void PaxosServiceImpl::InitializeService()
+{
+  if (!initialized) {
+
+    std::cout << "Manully start server " << me << std::endl;
+    grpc::ServerBuilder builder;
+    // listen on the given address
+    builder.AddListeningPort(peers_addr[me], grpc::InsecureServerCredentials());
+    // register "service" as the instance to communicate with clients; it will corresponds to an *synchronous* service
+    builder.RegisterService(this);
+    // assemble the server
+    server = std::move(builder.BuildAndStart());
+    // wait for the server to shutdown
+    std::cout << "Paxos is now listening on: " << peers_addr[me] << std::endl;
+
+    // construct channels and stubs
+    for (int i = 0; i < peers_num; ++i) {
+      // at each endpoint, create a channel for paxos to send rpc, and create a stub associated with the channel
+      std::shared_ptr<grpc::Channel> channel_i = grpc::CreateChannel(peers_addr[i], grpc::InsecureChannelCredentials());
+      std::unique_ptr<Paxos::Stub> peer_i = std::make_unique<Paxos::Stub>(channel_i);
+      channels.push_back(std::move(channel_i));
+      peers.push_back(std::move(peer_i));
+      std::cout << "Adding peer " << i << " to the channel/stub list ..." << std::endl;
+    }
+  }
+
+}
+
+/* Server starts to listen on the address */
+void PaxosServiceImpl::StartService()
+{
+  std::cout << "Wait for the server to shutdown..." << std::endl;
+  server->Wait();
+}
 
 
 /* Ping service for checking aliveness */
