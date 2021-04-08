@@ -39,9 +39,20 @@ PaxosServiceImpl::PaxosServiceImpl(int peers_num, std::vector<std::string> peers
   : peers_num(peers_num), peers_addr(peers_addr), me(me), dead(false), initialized(false) {}
 
 
+/* Shut down the server */
+void PaxosServiceImpl::TerminateService()
+{
+  std::unique_lock<std::shared_mutex> lock(mu);
+  std::cout << "Server shutdown..." << std::endl;
+  dead = true;
+  server->Shutdown();
+  listener->join();
+}
+
 /* Initialize Paxos Service */
 void PaxosServiceImpl::InitializeService()
 {
+  
   if (!initialized) {
 
     std::cout << "Manully start server " << me << std::endl;
@@ -71,7 +82,9 @@ void PaxosServiceImpl::InitializeService()
 /* Server starts to listen on the address */
 void PaxosServiceImpl::StartService()
 {
-  listener = new std::thread([this]() {start_service();} );
+  std::unique_lock<std::shared_mutex> lock(mu);
+  listener = std::make_unique<std::thread>([this]() {start_service();});
+  //listener = new std::thread( );
 }
 
 
@@ -137,22 +150,28 @@ grpc::Status PaxosServiceImpl::Receive(ServerContext* context, const Proposal* p
    the local peer state; it should not contact other peers. */
 std::tuple<bool, std::string> PaxosServiceImpl::Status(int seq)
 {
+  std::unique_lock<std::shared_mutex> lock(mu);
+
   bool decided;
   std::string val;
 
   std::map<int, Instance*>::iterator it;
   Instance* instance;
 
+
   it = instances.find(seq);
   if (it != instances.end()) {
     decided = true;
     instance = it->second;
     val = instance->vd;
+    std::cout << me << "-" << "True" << ":" << val << std::endl;
+    decided = val.compare("") != 0 ? true : false;
   } else {
     decided = false;
     val = "";
+    std::cout << me << "-" << "False" << ":" << val << std::endl;
+    
   }
-
   return std::make_tuple(decided, val);
 }
 

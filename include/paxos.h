@@ -57,6 +57,10 @@ class PaxosServiceImpl final : public Paxos::Service {
     // start listening on the address
     void StartService();
 
+    // shut down the service on the server
+    void TerminateService();
+
+
     // test if the server is available
     grpc::Status Ping(ServerContext* context, const EmptyMessage* request, EmptyMessage* response) override;
 
@@ -99,7 +103,7 @@ class PaxosServiceImpl final : public Paxos::Service {
     mutable std::shared_mutex acceptor_lock; // acceptorLock
     bool dead; // dead
     std::map<int, Instance*> instances; // instances (seq -> instance)
-    std::thread* listener;
+    std::unique_ptr<std::thread> listener;
     std::vector<std::future<bool>> request_threads;
 
 };
