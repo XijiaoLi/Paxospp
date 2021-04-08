@@ -101,9 +101,9 @@ In our project, we represent the global sequential order as an integer and event
 A few examples on how Paxos helps servers reach agreement. [2]
 
 ![paxos example](../images/paxos1.jpg) \
-![paxos example](http://url/to/img.png) \
-![paxos example](http://url/to/img.png) \
-![paxos example](http://url/to/img.png)
+![paxos example](../images/paxos2.jpg) \
+![paxos example](../images/paxos3.jpg) \
+![paxos example](../images/paxos4.jpg)
 
 
 ## Reference
