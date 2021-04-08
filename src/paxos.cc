@@ -168,8 +168,6 @@ std::tuple<bool, std::string> PaxosServiceImpl::propose(Instance* instance, int 
 			continue;
 		}
 
-		// TODO: px.updateMeta(reply.Meta)
-
     bool approved = response.approved();
     int n = response.number();
     std::string va = response.value();
@@ -226,8 +224,6 @@ bool PaxosServiceImpl::request_accept(Instance* instance, int seq, std::string v
     grpc::Status status = stub->Receive(&context, proposal, &response);
 
     if (status.ok()) {
-
-      // TODO: px.updateMeta(reply.Meta)
 
       bool approved = response.approved();
       int n = response.number();

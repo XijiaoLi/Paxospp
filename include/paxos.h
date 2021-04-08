@@ -44,8 +44,6 @@ struct Instance {
   std::string vd; // decidedValue
 };
 
-// typedef std::map<int, *Instance> InstanceMap;
-
 class PaxosServiceImpl final : public Paxos::Service {
   public:
 
@@ -70,10 +68,6 @@ class PaxosServiceImpl final : public Paxos::Service {
     std::tuple<bool, std::string> Status(int seq);
 
   private:
-
-    // MetaData init_meta();
-    // void update_meta(MetaData meta);
-    // void clean_done_values();
 
     Instance* get_instance(int seq);
     std::tuple<bool, std::string> propose(Instance* instance, int seq);

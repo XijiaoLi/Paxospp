@@ -1,7 +1,6 @@
 # User Manual
 
-
-## How to Compile
+## Installing Paxos-Cpp Library
 
 ### Install Third Party Libs
 Paxospp depends on gRPC and Protocol Buffers. The steps in the section explain now to build and locally install gRPC and Protocol Buffers using `cmake`. If you’d rather use [bazel](https://www.bazel.build/), see [Building from source](https://github.com/grpc/grpc/blob/master/BUILDING.md#build-from-source).
@@ -132,4 +131,26 @@ Adding 0.0.0.0:50053 to the channel list ...
 ```
 
 ## How to Wrap Your Own Code Around Paxospp
-???
+Your implementation must support this interface:
+
+```C++
+ PaxosServiceImpl paxos_0(int replica_size, std::vector<std::shared_ptr<grpc::Channel>> channels, int me); 
+ paxos_0.Start(int seq, std::string v); // start agreement on new instance
+ std::tuple<bool, std::string> paxos_0.Status(seq int); // get info about an instance
+```
+
+An application calls PaxosServiceImpl() Constructor to create a Paxos peer. The channels argument contains the address and ports of all the peers (including this one), and the me argument is the index of this peer in the peers array. Start(int seq, std::string v) asks Paxos to start agreement on instance seq, with proposed value v; Start() should return immediately, without waiting for agreement to complete. The application calls Status(seq) to find out whether the Paxos peer thinks the instance has reached agreement, and if so what the agreed value is. Status() should consult the local Paxos peer’s state and return immediately; it should not communicate with other peers. The application may call Status() for old instances.
+
+Your implementation should be able to make progress on agreement for multiple instances at the same time. That is, if application peers call Start() with different sequence numbers at about the same time, your implementation should run the Paxos protocol concurrently for all of them. You should not wait for agreement to complete for instance i before starting the protocol for instance i+1. Each instance should have its own separate execution of the Paxos protocol.
+
+## A First Project
+
+Let's begin the simplest project with Paxos-cpp libaray
+
+```sh
+$ mkdir -p cmake/build
+$ pushd cmake/build
+$ cmake -DCMAKE_PREFIX_PATH=$MY_INSTALL_DIR ../../helloworld  
+$ make -j
+```
+
