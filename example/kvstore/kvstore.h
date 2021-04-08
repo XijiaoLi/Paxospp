@@ -8,7 +8,7 @@
 #include <shared_mutex>
 #include <thread>
 #include <utility>
-#include <cstdlib> // std::int64_t
+#include <cstdlib> // int64_t
 #include "paxos.h"
 
 #include <grpcpp/grpcpp.h>
@@ -28,14 +28,14 @@ using kvstore::KVResponse;
 namespace kvstore {
 
 struct Response {
-  std::int64_t timestamp;
+  int64_t timestamp;
 	std::string err;
 	std::string value;
 };
 
 struct Op {
-  std::int64_t timestamp;
-  std::int64_t client_id;
+  int64_t timestamp;
+  int64_t client_id;
   std::string type;
   std::string key;
   std::string value;
@@ -56,20 +56,20 @@ class KVStoreImpl final : public KVStore::Service {
   private:
 
     // Instance* get_instance(int seq);
-    // std::tuple<std::string, std::string> write_log(Op op);
-    // std::tuple<std::string, std::string> execute_log(Op op);
-    // Op get_log(int seq);
+    std::tuple<std::string, std::string> write_log(Op op);
+    std::tuple<std::string, std::string> execute_log(Op op);
+    Op get_log(int seq, Op op);
     // void auto_update();
     //
     PaxosServiceImpl* px;
     // int me; // me
-    // int committed_seq;
-    // mutable std::shared_mutex mu; // mu
+    int committed_seq;
+    mutable std::shared_mutex mu; // mu
     std::map<std::string, std::string> db;
-    // std::map<std::int64_t, Response*> latest_requests;
+    std::map<int64_t, Response*> latest_requests;
 
 };
 
-} // namespace kvstore 
+} // namespace kvstore
 
 #endif

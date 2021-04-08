@@ -46,6 +46,7 @@ add_library(paxoslib
   "../../src/paxos.cc"
   "../../include/paxos.h")
 target_link_libraries(paxoslib
+  paxos_grpc_proto
   ${_REFLECTION}
   ${_GRPC_GRPCPP}
   ${_PROTOBUF_LIBPROTOBUF})
@@ -64,10 +65,10 @@ target_link_libraries(kvstore_grpc_proto
 # Targets (client|server)
 foreach(_target
   kvstore kvclient)
-  add_executable(${_target} "${_target}.cc")
+  add_executable(${_target} "${_target}.cc" "${_target}.h")
   target_link_libraries(${_target}
-    kvstore_grpc_proto
     paxoslib
+    kvstore_grpc_proto
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
