@@ -3,13 +3,13 @@ Manual
 
 # gRPC Services 
 ## Paxos rpc 
-``Ping:`` test if the server is available
-``Receive:`` handles rpc requests based on the types
+### ``Ping:`` test if the server is available
+### ``Receive:`` handles rpc requests based on the types
 
 ## Messages 
 
 ### Proposal
-    Proposal message is used to initiate messages in the propose or accept or decide phase in the paxos protocol.
+Proposal message is used to initiate messages in the propose or accept or decide phase in the paxos protocol.
 ```C++
         string    type               Type of the rpc message, propose/accept/decide, depending on the status of the server
         int32     proposed_num       The proposal number
@@ -20,7 +20,7 @@ Manual
 ```
 
 ### Response:
-    Response message is used to notify the message sender node about the database status in the message receiver node.
+Response message is used to notify the message sender node about the database status in the message receiver node.
 ```C++
         string    type               Type of the rpc message
         bool      approved           Whether or not the proposed_num satisfies conditions 
@@ -31,9 +31,8 @@ Manual
 ```
 
 # struct
-
 ## Instance
-    The paxos instance, in other words, a log in the database, once the value stored is decided, the data is immutable.
+The paxos instance, in other words, a log in the database, once the value stored is decided, the data is immutable.
 ```C++
     struct Instance {
         std::shared_mutex mu;
@@ -43,9 +42,8 @@ Manual
     }
 ```
 
-
 ## Proposer 
-    The struct stores the proposedNumber and highestSeenProposedNumber
+The struct stores the proposedNumber and highestSeenProposedNumber
 ```C++
     struct Proposer {
         int n;
@@ -55,7 +53,7 @@ Manual
 
 
 ## Acceptor
-     The struct stores the highestProposedNumber, highestAcceptedNumber, and highestAcceptedValue
+The struct stores the highestProposedNumber, highestAcceptedNumber, and highestAcceptedValue
 ```C++
     struct Acceptor {
         int np;
@@ -66,19 +64,21 @@ Manual
 
 # Classes
 ## PaxosServiceImpl
-    This class is the Paxos Protocol Implementation class, which will help servers to make agreement on logs
+This class is the Paxos Protocol Implementation class, which will help servers to make agreement on logs
 ### Members
 #### Peers related, parameters
 ```C++
             int peers_num                                          Number of nodes in the system 
             std::vector<std::string> peers_addr                    Peer ip address and port number
             std::vector<std::shared_ptr<grpc::Channel>> channels   Grpc channels
-            ```
+```
+
 #### Testing related 
 ```C++
             bool debug
             bool dead
-            ```
+```
+
 #### Server and Database component
 ```C++
             int me                                                  ID of the node
@@ -89,7 +89,8 @@ Manual
             mutable std::shared_mutex acceptor_lock                 Lock on the requests
             std::map<int, Instance*> instances                      Local replication stores the decided values 
             std::vector<std::future<bool>> request_threads          Placeholder for different requests        
-            ```
+```
+
 
 ### Interfaces
 ```C++
@@ -99,4 +100,4 @@ Manual
         void TerminateService(); // shut down the service on the server
         grpc::Status Start(int seq, std::string v); // main entry point for running paxos Receive service
         std::tuple<bool, std::string> Status(int seq); // check a paxos peer's decision on an instance
-        ```
+```
