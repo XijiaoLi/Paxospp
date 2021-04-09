@@ -45,7 +45,7 @@ struct Op {
 
 class KVStoreImpl final : public KVStore::Service {
   public:
-    KVStoreImpl(std::map<std::string, std::string> db_seeds, int peers_num, std::vector<std::string> peers_addr, int me);
+    KVStoreImpl(std::map<std::string, std::string> db_seeds, std::vector<std::string> peers_addr, int me);
     grpc::Status Get(ServerContext* context, const KVRequest* request, KVResponse* response) override;
     grpc::Status Put(ServerContext* context, const KVRequest* request, KVResponse* response) override;
 
