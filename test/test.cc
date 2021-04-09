@@ -84,7 +84,7 @@ void test_heavy_put(const std::vector<std::string>& addr_v, int put_size)
   for (int i = 0; i < peers_num; ++i) {
     std::cout << i << " start" << std::endl;
     std::unique_ptr<PaxosServiceImpl> paxos = std::unique_ptr<PaxosServiceImpl>(
-      new PaxosServiceImpl(peers_num,addr_v, i)
+      new PaxosServiceImpl(addr_v, i)
     );
     paxos->InitializeService();
     paxos->StartService();
@@ -123,9 +123,9 @@ void test_basic_put(const std::vector<std::string>& addr_v){
   auto random = std::bind(distribution, generator);
 
   // init paxos peers
-  PaxosServiceImpl paxos_0(peers_num, addr_v, 0);
-  PaxosServiceImpl paxos_1(peers_num, addr_v, 1);
-  PaxosServiceImpl paxos_2(peers_num, addr_v, 2);
+  PaxosServiceImpl paxos_0(addr_v, 0);
+  PaxosServiceImpl paxos_1(addr_v, 1);
+  PaxosServiceImpl paxos_2(addr_v, 2);
   paxos_0.InitializeService();
   paxos_0.StartService();
   paxos_1.InitializeService();
@@ -133,7 +133,7 @@ void test_basic_put(const std::vector<std::string>& addr_v){
   paxos_2.InitializeService();
   paxos_2.StartService();
 
-  grpc::Status put_status; 
+  grpc::Status put_status;
   put_status = paxos_1.Start(1, std::to_string(random()));
   put_status = paxos_2.Start(2, std::to_string(random()));
 
@@ -145,14 +145,14 @@ void test_basic_put(const std::vector<std::string>& addr_v){
     status0 = paxos_0.Status(2);
     status1 = paxos_1.Status(2);
     status2 = paxos_2.Status(2);
-  
+
     if ( std::get<0>(status0) && std::get<0>(status1) && std::get<0>(status2) ){
       break;
     }
   }
 
-  assert(std::get<1>(status0) == std::get<1>(status1) 
-    && std::get<1>(status1) == std::get<1>(status2) 
+  assert(std::get<1>(status0) == std::get<1>(status1)
+    && std::get<1>(status1) == std::get<1>(status2)
     && "all three servers agree");
 
   paxos_0.TerminateService();
@@ -170,7 +170,7 @@ void test_unreliable(const std::vector<std::string>& addr_v) {
 
   for (int i = 0; i < peers_num; ++i) {
     std::unique_ptr<PaxosServiceImpl> paxos = std::unique_ptr<PaxosServiceImpl>(
-      new PaxosServiceImpl(peers_num,addr_v, i)
+      new PaxosServiceImpl(addr_v, i)
     );
     paxos->InitializeService();
     paxos->StartService();
@@ -185,7 +185,7 @@ void test_unreliable(const std::vector<std::string>& addr_v) {
   auto random = std::bind(distribution, generator);
 
   pxs.at(1)->Start(0, std::to_string(random()));
-  pxs.at(0)->Start(1, std::to_string(random())); 
+  pxs.at(0)->Start(1, std::to_string(random()));
   pxs.at(2)->Start(2, std::to_string(random()));
   pxs.at(1)->Start(3, std::to_string(random()));
   pxs.at(3)->Start(4, std::to_string(random()));
@@ -222,7 +222,7 @@ void test_minority(const std::vector<std::string>& addr_v) {
 
   for (int i = 0; i < peers_num; ++i) {
     std::unique_ptr<PaxosServiceImpl> paxos = std::unique_ptr<PaxosServiceImpl>(
-      new PaxosServiceImpl(peers_num,addr_v, i)
+      new PaxosServiceImpl(addr_v, i)
     );
     paxos->InitializeService();
     paxos->StartService();
@@ -258,7 +258,7 @@ void test_concurrent(const std::vector<std::string>& addr_v) {
 
   for (int i = 0; i < peers_num; ++i) {
     std::unique_ptr<PaxosServiceImpl> paxos = std::unique_ptr<PaxosServiceImpl>(
-      new PaxosServiceImpl(peers_num,addr_v, i)
+      new PaxosServiceImpl(addr_v, i)
     );
     paxos->InitializeService();
     paxos->StartService();
@@ -266,18 +266,18 @@ void test_concurrent(const std::vector<std::string>& addr_v) {
     std::cout << i << " ok" << std::endl;
   }
 
-  pxs.at(1)->Start(1,"hi"); 
+  pxs.at(1)->Start(1,"hi");
   pxs.at(2)->Start(1, "2");
   pxs.at(0)->Start(1,"hello");
 
-  pxs.at(1)->Start(2,"hi2"); 
+  pxs.at(1)->Start(2,"hi2");
   pxs.at(2)->Start(2, "22");
   pxs.at(0)->Start(2,"hello2");
 
   pxs.at(1)->Start(1,"1");
 
   wait_check(1,2, pxs, peers_num);
-  
+
   // shut down alive the service
   for (int i=0; i< peers_num; i++) {
     pxs.at(i)->TerminateService();
@@ -289,22 +289,22 @@ void test_concurrent(const std::vector<std::string>& addr_v) {
 
 int main(int argc, char** argv) {
 
-  int peers_num = 3;
-  std::vector<std::string> addr_v {"0.0.0.0:50051", "0.0.0.0:50052", "0.0.0.0:50053" };
-  test_basic_put(addr_v);
+  // int peers_num = 3;
+  // std::vector<std::string> addr_v {"0.0.0.0:50051", "0.0.0.0:50052", "0.0.0.0:50053" };
+  // test_basic_put(addr_v);
 
   int put_size = 100;
   std::vector<std::string> addr_v_heavy {"0.0.0.0:50061", "0.0.0.0:50062", "0.0.0.0:50063" };
   test_heavy_put(addr_v_heavy, put_size);
 
-  std::vector<std::string> addr_v_unreliable {"0.0.0.0:50071", "0.0.0.0:50072", "0.0.0.0:50073",  "0.0.0.0:50074", "0.0.0.0:50075"};
-  test_unreliable(addr_v_unreliable);
-
-  std::vector<std::string> addr_v_minority {"0.0.0.0:50081", "0.0.0.0:50082", "0.0.0.0:50083",  "0.0.0.0:50084", "0.0.0.0:50085"};
-  test_minority(addr_v_minority);
-
-  std::vector<std::string> addr_v_concurent {"0.0.0.0:50091", "0.0.0.0:50092", "0.0.0.0:50093",  "0.0.0.0:50094", "0.0.0.0:50095"};
-  test_concurrent(addr_v_concurent);
+  // std::vector<std::string> addr_v_unreliable {"0.0.0.0:50071", "0.0.0.0:50072", "0.0.0.0:50073",  "0.0.0.0:50074", "0.0.0.0:50075"};
+  // test_unreliable(addr_v_unreliable);
+  //
+  // std::vector<std::string> addr_v_minority {"0.0.0.0:50081", "0.0.0.0:50082", "0.0.0.0:50083",  "0.0.0.0:50084", "0.0.0.0:50085"};
+  // test_minority(addr_v_minority);
+  //
+  // std::vector<std::string> addr_v_concurent {"0.0.0.0:50091", "0.0.0.0:50092", "0.0.0.0:50093",  "0.0.0.0:50094", "0.0.0.0:50095"};
+  // test_concurrent(addr_v_concurent);
   return 0;
 
 }

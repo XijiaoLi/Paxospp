@@ -31,8 +31,8 @@ namespace kvstore {
 
 struct Response {
   int64_t timestamp;
-	std::string err;
-	std::string value;
+  std::string err;
+  std::string value;
 };
 
 struct Op {
