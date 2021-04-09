@@ -58,7 +58,7 @@ void PaxosServiceImpl::TerminateService()
 /* Initialize Paxos Service */
 void PaxosServiceImpl::InitializeService()
 {
-  
+
   if (!initialized) {
 
     std::cout << "Manully start server " << me << std::endl;
@@ -123,25 +123,25 @@ grpc::Status PaxosServiceImpl::Receive(ServerContext* context, const Proposal* p
 
   if (type.compare("PROPOSE") == 0) {
     if (n <= (instance->a).np) {
-			response->set_approved(false);
-			response->set_number((instance->a).np);
-		} else {
-			(instance->a).np = n;
-			response->set_approved(true);
-			response->set_number((instance->a).na);
-			response->set_value((instance->a).va);
-		}
+      response->set_approved(false);
+      response->set_number((instance->a).np);
+    } else {
+      (instance->a).np = n;
+      response->set_approved(true);
+      response->set_number((instance->a).na);
+      response->set_value((instance->a).va);
+    }
   } else if (type.compare("ACCEPT") == 0) {
     if (n < instance->a.np) {
       response->set_approved(false);
-			response->set_number((instance->a).np);
-		} else {
-			(instance->a).np = n;
-			(instance->a).na = n;
-			(instance->a).va = value;
-			response->set_approved(true);
-			response->set_number(n); // unnecessary?
-		}
+      response->set_number((instance->a).np);
+    } else {
+      (instance->a).np = n;
+      (instance->a).na = n;
+      (instance->a).va = value;
+      response->set_approved(true);
+      response->set_number(n); // unnecessary?
+    }
   } else if (type.compare("DECIDE") == 0) {
 
     if (debug){
@@ -214,25 +214,25 @@ bool PaxosServiceImpl::start(int seq, std::string v)
   Instance* instance = get_instance(seq);
 
   std::unique_lock<std::shared_mutex> lock(instance->mu);
-	for (;!dead;) {
-		if (!(instance->vd).empty()) {
-			break;
-		}
-		(instance->p).np++;
-		(instance->p).n = (instance->p).np;
+  for (;!dead;) {
+    if (!(instance->vd).empty()) {
+      break;
+    }
+    (instance->p).np++;
+    (instance->p).n = (instance->p).np;
     auto [ ok, value ] = propose(instance, seq);
-		if (!ok) {
-			continue;
-		}
-		if (!value.empty()) {
-			v = value;
-		}
-		if (!request_accept(instance, seq, v)) {
-			continue;
-		}
-		decide(seq, v);
-		break;
-	}
+    if (!ok) {
+      continue;
+    }
+    if (!value.empty()) {
+      v = value;
+    }
+    if (!request_accept(instance, seq, v)) {
+      continue;
+    }
+    decide(seq, v);
+    break;
+  }
   return true;
 }
 
@@ -259,9 +259,9 @@ Instance* PaxosServiceImpl::get_instance(int seq)
 std::tuple<bool, std::string> PaxosServiceImpl::propose(Instance* instance, int seq)
 {
   int count = 0;
-	int highest_np = (instance->p).np;
-	int highest_na = -1;
-	std::string highest_va;
+  int highest_np = (instance->p).np;
+  int highest_na = -1;
+  std::string highest_va;
 
   int i = 0; // only for logging usage
   for (const auto& stub : peers) {
@@ -286,32 +286,32 @@ std::tuple<bool, std::string> PaxosServiceImpl::propose(Instance* instance, int 
     grpc::Status status = stub->Receive(&context, proposal, &response);
     // if !flag { continue }
     if (!status.ok()) {
-			continue;
-		}
+      continue;
+    }
 
     bool approved = response.approved();
     int n = response.number();
     std::string va = response.value();
 
-		if (approved) {
-			count++;
-			if (n > highest_na) {
-				highest_na = n;
-				highest_va = va;
-			}
-		} else {
-			highest_np = std::max(highest_np, n);
-		}
+    if (approved) {
+      count++;
+      if (n > highest_na) {
+        highest_na = n;
+        highest_va = va;
+      }
+    } else {
+      highest_np = std::max(highest_np, n);
+    }
 
     i++;
-	}
+  }
 
-	(instance->p).np = highest_np;
-	if (count * 2 > peers.size()) {
-		return std::make_tuple(true, highest_va);
-	} else {
-		return std::make_tuple(false, "");
-	}
+  (instance->p).np = highest_np;
+  if (count * 2 > peers.size()) {
+    return std::make_tuple(true, highest_va);
+  } else {
+    return std::make_tuple(false, "");
+  }
 
 }
 
@@ -321,7 +321,7 @@ std::tuple<bool, std::string> PaxosServiceImpl::propose(Instance* instance, int 
 bool PaxosServiceImpl::request_accept(Instance* instance, int seq, std::string v)
 {
   int highest_np = (instance->p).np;
-	int count = 0;
+  int count = 0;
 
   int i = 0;
   for (const auto& stub : peers) {
@@ -351,18 +351,18 @@ bool PaxosServiceImpl::request_accept(Instance* instance, int seq, std::string v
       bool approved = response.approved();
       int n = response.number();
 
-  		if (approved) {
-  			count++;
-  		} else {
-  			highest_np = std::max(highest_np, n);
-  		}
+      if (approved) {
+        count++;
+      } else {
+        highest_np = std::max(highest_np, n);
+      }
     }
 
     i++;
-	}
+  }
 
-	(instance->p).np = highest_np;
-	return count * 2 > peers.size();
+  (instance->p).np = highest_np;
+  return count * 2 > peers.size();
 }
 
 
@@ -375,9 +375,9 @@ void PaxosServiceImpl::decide(int seq, std::string v)
     int i = 0;
 
     for (const auto& stub : peers) {
-  		if (records[i]) {
-  			continue;
-  		}
+      if (records[i]) {
+        continue;
+      }
 
       ClientContext context;
 
