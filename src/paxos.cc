@@ -92,7 +92,7 @@ void PaxosServiceImpl::InitializeService()
 /* Server starts to listen on the address */
 void PaxosServiceImpl::StartService()
 {
-  std::unique_lock<std::shared_mutex> lock(mu);
+  //std::unique_lock<std::shared_mutex> lock(mu);
   listener = std::make_unique<std::thread>([this]() {start_service();});
   //listener = new std::thread( );
 }
@@ -394,22 +394,24 @@ void PaxosServiceImpl::decide(int seq, std::string v)
       grpc::Status status = stub->Receive(&context, proposal, &response);
 
       if (!status.ok()) {
-        // std::cout << "CPaxos " << me << " got from SPaxos " << i << " FAILED!" << std::endl;
+        if (debug){
+          std::cout << "CPaxos " << me << " got from SPaxos " << i << " FAILED!" << std::endl;
+        }
       } else {
         bool approved = response.approved();
         int peer = response.me();
         int peer_done = response.done();
-
-        std::cout << "CPaxos " << me << " got from SPaxos " << i << ", DECIDE approved = " << approved << std::endl;
+        if (debug){
+          std::cout << "CPaxos " << me << " got from SPaxos " << i << ", DECIDE approved = " << approved << std::endl;
+        }
 
         if (approved) {
           records[i] = true;
           count ++;
         }
-        i ++;
+        i++;
       }
     }
   }
-  std::cout << "Paxos DECIDE done " << std::endl;
   return;
 }

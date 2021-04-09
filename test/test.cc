@@ -17,24 +17,68 @@
 using google::protobuf::TextFormat;
 using paxos::Paxos;
 
+/*
+int ndecided(const std::vector<std::unique_ptr<PaxosServiceImpl>>& pxs, int seq){
+  int count = 0;
 
-std::vector<std::shared_ptr<grpc::Channel>> make_channels(int peers_num, const std::vector<std::string>& addr_v)
-{
-  std::vector<std::shared_ptr<grpc::Channel>> channels; // a list of channels
 
-  for (int i = 0; i < peers_num; ++i) {
-    // at each endpoint, create a channel for paxos to send rpc
-    std::shared_ptr<grpc::Channel> channel_i = grpc::CreateChannel(addr_v[i], grpc::InsecureChannelCredentials());
-    channels.push_back(std::move(channel_i));
-    std::cout << "Adding " << addr_v[i] << " to the channel list ..." << std::endl;
+}
+*/
+
+/* helper function, wait and check */
+void wait_check(int start, int end, const std::vector<std::unique_ptr<PaxosServiceImpl>>& pxs, int wanted){
+  int peers_num = pxs.size();
+
+  for (int i = start; i <= end; i++){
+    int ndecided = 0;
+    while(ndecided < wanted){
+      ndecided = 0;
+      for (int j = 0; j < peers_num; j++){
+        auto [ decided, _ ] = pxs.at(j)->Status(i);
+        if (decided == true){
+          ndecided += 1;
+        }
+      }
+    }
+    auto [ decided_0, val_0 ] = pxs.at(0)->Status(i);
+    int nagreed = 1;
+    for (int j = 1; j < peers_num; j++){
+        auto [ decided_1, val_1 ] = pxs.at(j)->Status(i);
+        if ( val_0 == val_1 ){
+          nagreed++;
+        }
+    }
+    assert( nagreed >= wanted);
   }
+  return;
+}
 
-  return channels;
+/* helper function, wait and fail */
+void wait_fail(int start, int end, const std::vector<std::unique_ptr<PaxosServiceImpl>>& pxs, int wanted){
+  int peers_num = pxs.size();
+
+  for (int i = start; i <= end; i++){
+    int ndecided = 0;
+    int round = 0;
+    while(ndecided < wanted && round < 10){
+      ndecided = 0;
+      round++;
+      for (int j = 0; j < peers_num; j++){
+        auto [ decided, _ ] = pxs.at(j)->Status(i);
+        if (decided == true){
+          ndecided += 1;
+        }
+      }
+    }
+    assert(ndecided == 0);
+  }
+  return;
 }
 
 
-void test_heavy_put(int peers_num, const std::vector<std::string>& addr_v, std::vector<std::shared_ptr<grpc::Channel>> channels, int put_size)
+void test_heavy_put(const std::vector<std::string>& addr_v, int put_size)
 {
+  int peers_num = addr_v.size();
   std::vector<std::unique_ptr<PaxosServiceImpl>> pxs;
 
   for (int i = 0; i < peers_num; ++i) {
@@ -45,7 +89,6 @@ void test_heavy_put(int peers_num, const std::vector<std::string>& addr_v, std::
     paxos->InitializeService();
     paxos->StartService();
     pxs.push_back(std::move(paxos));
-    std::cout << i << " ok" << std::endl;
   }
 
   // random number seed
@@ -60,28 +103,7 @@ void test_heavy_put(int peers_num, const std::vector<std::string>& addr_v, std::
     grpc::Status put_status = pxs.at(server_num)->Start(i, std::to_string(random()));
   }
 
-  std::tuple<bool, std::string> status0;
-  std::tuple<bool, std::string> status1;
-  std::tuple<bool, std::string> status2;
-
-  // check all saved values
-  for (int i = 0; i < put_size; i++){
-    int ndecided = 0;
-    while(ndecided != peers_num){
-      ndecided = 0;
-      for (int j = 0; j < peers_num; j++){
-        auto [ decided, _ ] = pxs.at(j)->Status(i);
-        if (decided == true){
-          ndecided += 1;
-        }
-      }
-    }
-    auto [ decided_0, val_0 ] = pxs.at(0)->Status(i);
-    for (int j = 1; j < peers_num; j++){
-        auto [ decided_1, val_1 ] = pxs.at(j)->Status(i);
-        assert( val_0 == val_1 );
-    }
-  }
+  wait_check(0, put_size-1, pxs, peers_num);
 
   // shut down
   for (int i = 0; i < peers_num; i++) {
@@ -92,20 +114,15 @@ void test_heavy_put(int peers_num, const std::vector<std::string>& addr_v, std::
 }
 
 
-void test_basic_put(int peers_num, const std::vector<std::string>& addr_v, std::vector<std::shared_ptr<grpc::Channel>> channels){
+void test_basic_put(const std::vector<std::string>& addr_v){
    // random number seed
+  int peers_num = addr_v.size();
   unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
   std::default_random_engine generator(seed);
   std::uniform_int_distribution<int> distribution(0, 500000);
   auto random = std::bind(distribution, generator);
 
-  // parameters
-  //int peers_num = 3;
-
-  //std::vector<std::string> addr_v {"0.0.0.0:50051", "0.0.0.0:50052", "0.0.0.0:50053" };
-  //std::vector<std::shared_ptr<grpc::Channel>> channels = make_channels(peers_num, addr_v);
-  // ----------------------  manutal creation of the paxos service----------------------
-
+  // init paxos peers
   PaxosServiceImpl paxos_0(peers_num, addr_v, 0);
   PaxosServiceImpl paxos_1(peers_num, addr_v, 1);
   PaxosServiceImpl paxos_2(peers_num, addr_v, 2);
@@ -146,15 +163,148 @@ void test_basic_put(int peers_num, const std::vector<std::string>& addr_v, std::
   return;
 }
 
+void test_unreliable(const std::vector<std::string>& addr_v) {
+
+  std::vector<std::unique_ptr<PaxosServiceImpl>> pxs;
+  int peers_num = addr_v.size();
+
+  for (int i = 0; i < peers_num; ++i) {
+    std::unique_ptr<PaxosServiceImpl> paxos = std::unique_ptr<PaxosServiceImpl>(
+      new PaxosServiceImpl(peers_num,addr_v, i)
+    );
+    paxos->InitializeService();
+    paxos->StartService();
+    pxs.push_back(std::move(paxos));
+    std::cout << i << " ok" << std::endl;
+  }
+
+  // random number seed
+  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+  std::default_random_engine generator(seed);
+  std::uniform_int_distribution<int> distribution(0, 500000);
+  auto random = std::bind(distribution, generator);
+
+  pxs.at(1)->Start(0, std::to_string(random()));
+  pxs.at(0)->Start(1, std::to_string(random())); 
+  pxs.at(2)->Start(2, std::to_string(random()));
+  pxs.at(1)->Start(3, std::to_string(random()));
+  pxs.at(3)->Start(4, std::to_string(random()));
+
+  // check all saved values
+  wait_check(0,4,pxs,4);
+  std::cout << "pass test befor a few server die" << std::endl;
+
+  // make a minority of server die
+  std::set<int> deadServer = {3,4};
+  for (auto i : deadServer) {
+    pxs.at(i)->TerminateService();
+  }
+  std::cout << "server 3 and server 4 is down" << std::endl;
+
+  pxs.at(0)->Start(5,std::to_string(random()));
+  pxs.at(1)->Start(6,std::to_string(random()));
+
+  wait_check(5,6,pxs,3);
+
+  std::cout << "alive servers function as expected" << std::endl;
+  // shut down alive the service
+  for (int i=0; i<peers_num; i++) {
+    if (deadServer.count(i)==0)
+      pxs.at(i)->TerminateService();
+  }
+  std::cout << "----------------Test_unreliable: Passed" << std::endl;
+  return;
+}
+
+void test_minority(const std::vector<std::string>& addr_v) {
+  int peers_num = addr_v.size();
+  std::vector<std::unique_ptr<PaxosServiceImpl>> pxs;
+
+  for (int i = 0; i < peers_num; ++i) {
+    std::unique_ptr<PaxosServiceImpl> paxos = std::unique_ptr<PaxosServiceImpl>(
+      new PaxosServiceImpl(peers_num,addr_v, i)
+    );
+    paxos->InitializeService();
+    paxos->StartService();
+    pxs.push_back(std::move(paxos));
+    std::cout << i << " ok" << std::endl;
+  }
+
+  // make a majority of server die
+  std::set<int> deadServer = {2,3,4};
+  for (auto i : deadServer) {
+    pxs.at(i)->TerminateService();
+  }
+  std::cout << "server 2 and server 3 and server 4 is down" << std::endl;
+
+  pxs.at(0)->Start(0,"0");
+  pxs.at(1)->Start(1,"1");
+  wait_fail(0, 1, pxs, peers_num);
+
+  std::cout << "minority servers cannot make any progress" << std::endl;
+  // shut down alive the service
+  for (int i=0; i<peers_num; i++) {
+    if (deadServer.count(i)==0)
+      pxs.at(i)->TerminateService();
+  }
+  std::cout << "----------------Test_minority: Passed" << std::endl;
+  return;
+}
+
+void test_concurrent(const std::vector<std::string>& addr_v) {
+
+  int peers_num = addr_v.size();
+  std::vector<std::unique_ptr<PaxosServiceImpl>> pxs;
+
+  for (int i = 0; i < peers_num; ++i) {
+    std::unique_ptr<PaxosServiceImpl> paxos = std::unique_ptr<PaxosServiceImpl>(
+      new PaxosServiceImpl(peers_num,addr_v, i)
+    );
+    paxos->InitializeService();
+    paxos->StartService();
+    pxs.push_back(std::move(paxos));
+    std::cout << i << " ok" << std::endl;
+  }
+
+  pxs.at(1)->Start(1,"hi"); 
+  pxs.at(2)->Start(1, "2");
+  pxs.at(0)->Start(1,"hello");
+
+  pxs.at(1)->Start(2,"hi2"); 
+  pxs.at(2)->Start(2, "22");
+  pxs.at(0)->Start(2,"hello2");
+
+  pxs.at(1)->Start(1,"1");
+
+  wait_check(1,2, pxs, peers_num);
+  
+  // shut down alive the service
+  for (int i=0; i< peers_num; i++) {
+    pxs.at(i)->TerminateService();
+  }
+  std::cout << "----------------Test_concurrent: Passed" << std::endl;
+  return;
+}
+
 
 int main(int argc, char** argv) {
 
   int peers_num = 3;
-  int put_size = 100;
   std::vector<std::string> addr_v {"0.0.0.0:50051", "0.0.0.0:50052", "0.0.0.0:50053" };
-  std::vector<std::shared_ptr<grpc::Channel>> channels = make_channels(peers_num, addr_v);
-  test_basic_put(peers_num, addr_v, channels);
-  test_heavy_put(peers_num, addr_v, channels, put_size);
+  test_basic_put(addr_v);
+
+  int put_size = 100;
+  std::vector<std::string> addr_v_heavy {"0.0.0.0:50061", "0.0.0.0:50062", "0.0.0.0:50063" };
+  test_heavy_put(addr_v_heavy, put_size);
+
+  std::vector<std::string> addr_v_unreliable {"0.0.0.0:50071", "0.0.0.0:50072", "0.0.0.0:50073",  "0.0.0.0:50074", "0.0.0.0:50075"};
+  test_unreliable(addr_v_unreliable);
+
+  std::vector<std::string> addr_v_minority {"0.0.0.0:50081", "0.0.0.0:50082", "0.0.0.0:50083",  "0.0.0.0:50084", "0.0.0.0:50085"};
+  test_minority(addr_v_minority);
+
+  std::vector<std::string> addr_v_concurent {"0.0.0.0:50091", "0.0.0.0:50092", "0.0.0.0:50093",  "0.0.0.0:50094", "0.0.0.0:50095"};
+  test_concurrent(addr_v_concurent);
   return 0;
 
 }
