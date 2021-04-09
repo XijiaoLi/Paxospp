@@ -29,6 +29,6 @@ message KVRequest {
 }
 
 message KVResponse {
-	string err = 1;
-	string value = 2;
+  string err = 1;
+  string value = 2;
 }
