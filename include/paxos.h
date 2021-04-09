@@ -46,10 +46,12 @@ struct Instance {
 };
 
 class PaxosServiceImpl final : public Paxos::Service {
+  
+  
   public:
-    PaxosServiceImpl(int peers_num, std::vector<std::shared_ptr<grpc::Channel>> channels, int me);
     PaxosServiceImpl(int peers_num, std::vector<std::string> peers_addr, int me);
-    PaxosServiceImpl(int peers_num, std::vector<std::shared_ptr<grpc::Channel>> channels, int me, bool debug);
+
+  
     PaxosServiceImpl(int peers_num, std::vector<std::string> peers_addr, int me, bool debug);
 
     // initialize server, channel, stub
