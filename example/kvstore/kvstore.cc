@@ -91,18 +91,8 @@ grpc::Status KVStoreImpl::Put(ServerContext* context, const KVRequest* request, 
   int64_t client_id = request->client_id();
 
   std::unique_lock<std::shared_mutex> lock(mu);
-
-  Op op = {
-    timestamp,
-    client_id,
-    "PUT",
-    key,
-    value
-  };
-
+  Op op = {timestamp, client_id, "PUT", key, value};
   auto [ err, val ] = write_log(op);
-
-  std::cout << "kvStore server received PUT " << key << " with " << value << "\n";
   response->set_err(err);
   return grpc::Status::OK;
 }
@@ -115,18 +105,8 @@ grpc::Status KVStoreImpl::Get(ServerContext* context, const KVRequest* request, 
   int64_t client_id = request->client_id();
 
   std::unique_lock<std::shared_mutex> lock(mu);
-
-  Op op = {
-    timestamp,
-    client_id,
-    "GET",
-    key,
-    ""
-  };
-
+  Op op = {timestamp, client_id, "PUT", key, value};
   auto [ err, val ] = write_log(op);
-
-  std::cout << "kvStore server received GET " << key << " found " << val << "\n";
   response->set_err(err);
   response->set_value(val);
   return grpc::Status::OK;
