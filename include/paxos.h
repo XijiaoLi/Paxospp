@@ -47,33 +47,25 @@ struct Instance {
 
 class PaxosServiceImpl final : public Paxos::Service {
   
-  
   public:
     PaxosServiceImpl(int peers_num, std::vector<std::string> peers_addr, int me);
-
-  
     PaxosServiceImpl(int peers_num, std::vector<std::string> peers_addr, int me, bool debug);
 
-    // initialize server, channel, stub
+    // Initialize server, channel, stub
     void InitializeService();
-
-    // start listening on the address
+    // Start listening on the address
     void StartService();
-
-    // shut down the service on the server
+    // Shut down the service on the server
     void TerminateService();
 
-
-    // test if the server is available
+    // Paxos Ping service test if the server is available
     grpc::Status Ping(ServerContext* context, const EmptyMessage* request, EmptyMessage* response) override;
-
-    // paxos service
+    // Paxos Receice service to receive proposals
     grpc::Status Receive(ServerContext* context, const Proposal* proposal, Response* response) override;
-
-    // main entry point for running paxos Receive service
+    
+    // Main entry point for running Paxos service
     grpc::Status Start(int seq, std::string v);
-
-    // check a paxos peer's decision on an instance
+    // Check a paxos peer's decision on an instance
     std::tuple<bool, std::string> Status(int seq);
 
   private:
