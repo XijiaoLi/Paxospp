@@ -205,73 +205,72 @@ std::tuple<std::string, std::string> KVStoreImpl::execute_log(Op op)
 } // namespace kvstore
 
 
-void show_usage(char* name)
-{
-  std::cerr << "Usage: " << name << " <option(s)> \n"
-            << "Options:\n"
-            << "\t-h\tShow this help message\n"
-            << "\t-n\t<int>\tSpecify the index of kv server among its peers\n"
-            << "\t-p\t<address> <address>...\tSpecify the list of address of paxos servers\n"
-            << "\t-s\t<address>\tSpecify the address of kv server\n"
-            << std::endl;
-}
-
-bool legal_int(char *str) {
-  while (*str) {
-    if (!isdigit(*str++)) {
-      return false;
-    }
-  }
-  return true;
-}
+// void show_usage(char* name)
+// {
+//   std::cerr << "Usage: " << name << " <option(s)> \n"
+//             << "Options:\n"
+//             << "\t-h\tShow this help message\n"
+//             << "\t-n\t<int>\tSpecify the index of kv server among its peers\n"
+//             << "\t-p\t<address> <address>...\tSpecify the list of address of paxos servers\n"
+//             << "\t-s\t<address>\tSpecify the address of kv server\n"
+//             << std::endl;
+// }
+//
+// bool legal_int(char *str) {
+//   while (*str) {
+//     if (!isdigit(*str++)) {
+//       return false;
+//     }
+//   }
+//   return true;
+// }
 
 
 int main(int argc, char** argv) {
-  std::cerr << argc << "\n";
-  if (argc < 1) {
-
-    return -EINVAL;
-  }
-
-  std::vector<std::string> paxos_addr;
-  std::string kvserver_addr;
-  int me, peers_num;
-
-  int arg_i = 0;
-  while (arg_i < argc) {
-    arg_i ++;
-    if (strcmp(argv[arg_i], "-p") == 0) {
-      arg_i ++;
-      while (arg_i < argc && argv[arg_i][0] != '-') {
-        paxos_addr.push_back(argv[arg_i]);
-        arg_i++;
-      }
-      peers_num = paxos_addr.size();
-      if (peers_num == 0) {
-        show_usage(argv[0]);
-        return 0;
-      }
-    } else if (strcmp(argv[arg_i], "-h") == 0) {
-      show_usage(argv[0]);
-      return 0;
-    } else if (strcmp(argv[arg_i], "-s") == 0) {
-      arg_i ++;
-      if (arg_i < argc && argv[arg_i][0] != '-') {
-        kvserver_addr = argv[arg_i];
-      } else {
-        show_usage(argv[0]);
-        return 0;
-      }
-    } else if (strcmp(argv[arg_i], "-n") == 0) {
-      arg_i ++;
-      if (arg_i < argc && legal_int(argv[arg_i])) {
-        me = atoi(argv[arg_i]);
-      } else {
-        show_usage(argv[0]);
-        return 0;
-      }
-    }
-  }
+  // std::cerr << argc << "\n";
+  // if (argc < 1) {
+  //   return -EINVAL;
+  // }
+  //
+  // std::vector<std::string> paxos_addr;
+  // std::string kvserver_addr;
+  // int me, peers_num;
+  //
+  // int arg_i = 0;
+  // while (arg_i < argc) {
+  //   arg_i ++;
+  //   if (strcmp(argv[arg_i], "-p") == 0) {
+  //     arg_i ++;
+  //     while (arg_i < argc && argv[arg_i][0] != '-') {
+  //       paxos_addr.push_back(argv[arg_i]);
+  //       arg_i++;
+  //     }
+  //     peers_num = paxos_addr.size();
+  //     if (peers_num == 0) {
+  //       show_usage(argv[0]);
+  //       return 0;
+  //     }
+  //   } else if (strcmp(argv[arg_i], "-h") == 0) {
+  //     show_usage(argv[0]);
+  //     return 0;
+  //   } else if (strcmp(argv[arg_i], "-s") == 0) {
+  //     arg_i ++;
+  //     if (arg_i < argc && argv[arg_i][0] != '-') {
+  //       kvserver_addr = argv[arg_i];
+  //     } else {
+  //       show_usage(argv[0]);
+  //       return 0;
+  //     }
+  //   } else if (strcmp(argv[arg_i], "-n") == 0) {
+  //     arg_i ++;
+  //     if (arg_i < argc && legal_int(argv[arg_i])) {
+  //       me = atoi(argv[arg_i]);
+  //     } else {
+  //       show_usage(argv[0]);
+  //       return 0;
+  //     }
+  //   }
+  // }
 
   kvstore::RunServer();
 

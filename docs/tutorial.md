@@ -103,12 +103,12 @@ $ https://github.com/XijiaoLi/Paxos-Cpp.git
 $ cd Paxos-Cpp
 ```
 
-Go to the `Paxos-Cpp/example/` folder, and run the following commands to build the excutable using `cmake`:
+Go to the `Paxos-Cpp/simple-server/` folder, and run the following commands to build the excutable using `cmake`:
 
 ```sh
 $ mkdir -p cmake/build
 $ pushd cmake/build
-$ cmake -DCMAKE_PREFIX_PATH=$MY_INSTALL_DIR ../../test  
+$ cmake -DCMAKE_PREFIX_PATH=$MY_INSTALL_DIR ../..
 $ make -j
 ```
 Note: the last parameter of the cmake command is the directory contains the CMakeLists.txt. If Errors saying the CMakeLists.txt doesn't match, do the following and run the above commands again:
@@ -118,39 +118,88 @@ $ cd ../..
 $ rm -r cmake/build
 ```
 
-Now you should be at **build** directory `Paxos-Cpp/example/cmake/build`, with the excutable `server`.
+Now you should be at **build** directory `Paxos-Cpp/simple-server/cmake/build`, with the excutable `server`.
 
 Run the server:
 
 ```bash
 $ ./server
-Adding 0.0.0.0:50051 to the channel list ...
-Adding 0.0.0.0:50052 to the channel list ...
-Adding 0.0.0.0:50053 to the channel list ...
+Paxos is now listening on: 0.0.0.0:50051
+Adding peer 0 to the channel/stub list ...
+Adding peer 1 to the channel/stub list ...
+Wait for the server to shutdown...
+Paxos is now listening on: 0.0.0.0:50052
+Adding peer 0 to the channel/stub list ...
+Adding peer 1 to the channel/stub list ...
+Wait for the server to shutdown...
+CPaxos 0 sent PROPOSE to SPaxos 0
+CPaxos 0 sent PROPOSE to SPaxos 1
+CPaxos 0 sent ACCEPT to SPaxos 0
+CPaxos 0 sent ACCEPT to SPaxos 1
+SPaxos 0 from CPaxos 0
+	 DECIDE (seq, val) = (1, 157683) from initial value ''
+CPaxos 0 got from SPaxos 0, DECIDE approved = 1
+SPaxos 1 from CPaxos 0
+	 DECIDE (seq, val) = (1, 157683) from initial value ''
+CPaxos 0 got from SPaxos 1, DECIDE approved = 1
 ...
 ```
 
 ## How to Wrap Your Own Code Around Paxospp
-Your implementation must support this interface:
 
-```C++
- PaxosServiceImpl paxos_0(int peers_num, std::vector<std::shared_ptr<grpc::Channel>> channels, int me); 
- paxos_0.Start(int seq, std::string v); // start agreement on new instance
- std::tuple<bool, std::string> paxos_0.Status(seq int); // get info about an instance
-```
+### A First Project: kvStore
 
-An application calls PaxosServiceImpl() Constructor to create a Paxos peer. The channels argument contains the address and ports of all the peers (including this one), and the me argument is the index of this peer in the peers array. Start(int seq, std::string v) asks Paxos to start agreement on instance seq, with proposed value v; Start() should return immediately, without waiting for agreement to complete. The application calls Status(seq) to find out whether the Paxos peer thinks the instance has reached agreement, and if so what the agreed value is. Status() should consult the local Paxos peer’s state and return immediately; it should not communicate with other peers. The application may call Status() for old instances.
-
-Your implementation should be able to make progress on agreement for multiple instances at the same time. That is, if application peers call Start() with different sequence numbers at about the same time, your implementation should run the Paxos protocol concurrently for all of them. You should not wait for agreement to complete for instance i before starting the protocol for instance i+1. Each instance should have its own separate execution of the Paxos protocol.
-
-## A First Project
-
-Let's begin the simplest project with Paxos-cpp libaray
+Let's begin the simplest project with Paxos-cpp libaray.
+Go to the `Paxos-Cpp/kvstore/` folder, and run the following commands to build the excutable using `cmake`:
 
 ```sh
 $ mkdir -p cmake/build
 $ pushd cmake/build
-$ cmake -DCMAKE_PREFIX_PATH=$MY_INSTALL_DIR ../../helloworld  
+$ cmake -DCMAKE_PREFIX_PATH=$MY_INSTALL_DIR ../..
 $ make -j
 ```
 
+Now you should be at **build** directory `Paxos-Cpp/kvstore/cmake/build`, with the excutable `kvstore` and `kvclient`.
+
+Open three terminal tabs to run the servers at different addresses, and open another terminal tab to run the client.
+Below is the sample output of one of the three server and the client (with debug mode set).
+```bash
+$ ./kvstore -p 0.0.0.0:50051 0.0.0.0:50052 0.0.0.0:50053 -s 0.0.0.0:50061
+Paxos is now listening on: 0.0.0.0:50051
+Adding peer 0 to the channel/stub list ...
+Adding peer 1 to the channel/stub list ...
+Adding peer 2 to the channel/stub list ...
+kvStore server received PUT hello with world
+CPaxos 0 sent PROPOSE to SPaxos 0
+CPaxos 0 sent PROPOSE to SPaxos 1
+CPaxos 0 sent PROPOSE to SPaxos 2
+CPaxos 0 sent ACCEPT to SPaxos 0
+CPaxos 0 sent ACCEPT to SPaxos 1
+CPaxos 0 sent ACCEPT to SPaxos 2
+CPaxos 0 sent DECIDE to SPaxos 0
+CPaxos 0 sent DECIDE to SPaxos 1
+CPaxos 0 sent DECIDE to SPaxos 2
+Paxos DECIDE done
+kvStore server received GET hello found world
+CPaxos 0 sent PROPOSE to SPaxos 0
+CPaxos 0 sent PROPOSE to SPaxos 1
+CPaxos 0 sent PROPOSE to SPaxos 2
+CPaxos 0 sent ACCEPT to SPaxos 0
+CPaxos 0 sent ACCEPT to SPaxos 1
+CPaxos 0 sent ACCEPT to SPaxos 2
+CPaxos 0 sent DECIDE to SPaxos 0
+CPaxos 0 sent DECIDE to SPaxos 1
+CPaxos 0 sent DECIDE to SPaxos 2
+Paxos DECIDE done
+...
+```
+
+```bash
+$ ./kvclient -s 0.0.0.0:50061
+kvStore client sent PUT hello with world
+kvStore client received PUT hello with world succeeded
+kvStore client sent GET hello
+kvStore client received GET hello with world succeeded
+KVStore received: world
+...
+```

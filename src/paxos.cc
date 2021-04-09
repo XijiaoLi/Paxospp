@@ -53,7 +53,6 @@ void PaxosServiceImpl::TerminateService()
 void PaxosServiceImpl::InitializeService()
 {
   if (!initialized) {
-    std::cout << "Manully start server " << me << std::endl;
     grpc::ServerBuilder builder;
     // listen on the given address
     builder.AddListeningPort(peers_addr[me], grpc::InsecureServerCredentials());
