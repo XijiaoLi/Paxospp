@@ -78,18 +78,16 @@ class PaxosServiceImpl final : public Paxos::Service {
 
     int peers_num;
     int me;
-    bool debug; 
     std::unique_ptr<grpc::Server> server;
-    std::vector<std::string> peers_addr;
     std::vector<std::unique_ptr<Paxos::Stub>> peers;
     std::vector<std::shared_ptr<grpc::Channel>> channels;
-    bool initialized;
     mutable std::shared_mutex mu;
     mutable std::shared_mutex acceptor_lock;
-    bool dead;
     std::map<int, Instance*> instances;
     std::unique_ptr<std::thread> listener;
     std::vector<std::future<bool>> request_threads;
+    bool dead;
+  
 
 };
 
