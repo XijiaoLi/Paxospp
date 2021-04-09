@@ -53,21 +53,28 @@
 * **PaxosServiceImpl:** This class is the Paxos Protocol Implementation class, which will help servers to make agreement on logs
     * Members
         - Peers related
-            ``int peers_num``                                           Number of nodes in the system 
-            ``std::vector<std::string> peers_addr``                     Peer ip address and port number
-            ``std::vector<std::shared_ptr<grpc::Channel>> channels``    Grpc channels
+            ```C++
+            int peers_num                                          Number of nodes in the system 
+            std::vector<std::string> peers_addr                    Peer ip address and port number
+            std::vector<std::shared_ptr<grpc::Channel>> channels   Grpc channels
+            ```
         - Testing related 
-            ``bool debug`` 
-            ``bool dead``
+            ```C++
+            bool debug
+            bool dead
+            ```
         - Server and Database component
-            ``int me``                                                  ID of the node
-            ``bool initialized``                                        Initiation parameter
-            ``std::unique_ptr<std::thread> listener ``                  Keep-alive Server listening all the time
-            ``std::unique_ptr<grpc::Server> server``                    Thread runs the lisenting server
-            ``mutable std::shared_mutex mu``                            Lock on the operations               
-            ``mutable std::shared_mutex acceptor_lock``                 Lock on the requests
-            ``std::map<int, Instance*> instances``                      Local replication stores the decided values 
-            ``std::vector<std::future<bool>> request_threads``          Placeholder for different requests
+            ```C++
+            int me                                                  ID of the node
+            bool initialized                                        Initiation parameter
+            std::unique_ptr<std::thread> listener                   Keep-alive Server listening all the time
+            std::unique_ptr<grpc::Server> server                    Thread runs the lisenting server
+            mutable std::shared_mutex mu                            Lock on the operations               
+            mutable std::shared_mutex acceptor_lock                 Lock on the requests
+            std::map<int, Instance*> instances                      Local replication stores the decided values 
+            std::vector<std::future<bool>> request_threads          Placeholder for different requests        
+            ```
+            
     * Interfaces
         ```C++
         PaxosServiceImpl(std::vector<std::string> peers_addr, int me); // constructor
