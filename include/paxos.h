@@ -76,29 +76,18 @@ class PaxosServiceImpl final : public Paxos::Service {
     bool request_accept(Instance* instance, int seq, std::string v);
     void decide(int seq, std::string v);
 
-    // below are list of fields in PaxosServiceImpl class,
-    // corresponding to line 34-39 in paxos.go
-
-    /* TODO: will implement in later version
-    bool                     unreliable; // unreliable
-    int                      rpc_count; // rpcCount
-    int                      max_seq; // maxSeq
-    int[]                    done_map; // doneMap
-    int                      to_clean_seq; // toCleanSeq
-    */
-
     int peers_num;
-    int me; // me
+    int me;
     bool debug; 
     std::unique_ptr<grpc::Server> server;
     std::vector<std::string> peers_addr;
-    std::vector<std::unique_ptr<Paxos::Stub>> peers; // peers
-    std::vector<std::shared_ptr<grpc::Channel>> channels; // channels
+    std::vector<std::unique_ptr<Paxos::Stub>> peers;
+    std::vector<std::shared_ptr<grpc::Channel>> channels;
     bool initialized;
-    mutable std::shared_mutex mu; // mu
-    mutable std::shared_mutex acceptor_lock; // acceptorLock
-    bool dead; // dead
-    std::map<int, Instance*> instances; // instances (seq -> instance)
+    mutable std::shared_mutex mu;
+    mutable std::shared_mutex acceptor_lock;
+    bool dead;
+    std::map<int, Instance*> instances;
     std::unique_ptr<std::thread> listener;
     std::vector<std::future<bool>> request_threads;
 
