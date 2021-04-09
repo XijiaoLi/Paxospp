@@ -82,7 +82,18 @@ void PaxosServiceImpl::InitializeService()
 /* Server starts to listen on the address */
 void PaxosServiceImpl::StartService()
 {
-  std::unique_lock<std::shared_mutex> lock(mu);
+  server->Wait();
+}
+
+/* Server starts to listen on the address */
+void PaxosServiceImpl::StartService()
+{
+  listener = new std::thread([this]() {start_service();});
+}
+
+/* Server starts to listen on the address */
+void PaxosServiceImpl::StartService()
+{
   listener = std::make_unique<std::thread>([this]() {start_service();});
 }
 
@@ -190,9 +201,6 @@ grpc::Status PaxosServiceImpl::Start(int seq, std::string v)
 /* Inner function for starting service */
 void PaxosServiceImpl::start_service()
 {
-  if (debug){
-     std::cout << "Wait for the server to shutdown..." << std::endl;
-  }
   server->Wait();
 }
 
