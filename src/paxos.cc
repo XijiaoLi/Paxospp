@@ -190,9 +190,6 @@ grpc::Status PaxosServiceImpl::Start(int seq, std::string v)
 /* Inner function for starting service */
 void PaxosServiceImpl::start_service()
 {
-  if (debug){
-     std::cout << "Wait for the server to shutdown..." << std::endl;
-  }
   server->Wait();
 }
 
