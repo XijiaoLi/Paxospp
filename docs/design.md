@@ -2,7 +2,6 @@
 # Design Documentation
 
 ## Overview
---------
 Paxospp aims to create a lightweight Paxos consensus protocol library that has a simple and easy-to-use interface. This libaray helps the programmers to develop multi-server applications without dealing with all the system, networks, and other reliability issues. It helps services in synchronizing the state from a single node to the other nodes to form a multi-copy cluster and handling fail-over automatically. A typical application using our libaray would be distributed data storage system.
 
 ### Agreement in a Paxospp
@@ -14,7 +13,6 @@ Paxospp Library requires only a majority of nodes to be alive and make sequntial
 Paxospp uses gRPC under the hood. gRPC is build on http2 and TCP protocol. In Paxospp, integrity is provided in different layers. During the network communication, Paxospp offers data integrity and delivery gurantee. Also, by applying features of the network protocol saves RTTs and enables Paxospp library to use less time overall in the logging process.
 
 ## Design Choices
---------
 ### Multithreading and Concurrency
 - Node representation
 A Paxospp node in Paxospp library is naturally divided and represented by two modules, a server component which keeps listening for the incoming synchronization requests and a client part which initiates data storage requests and passes to other nodes. Each server is on a thread listening for requests.
