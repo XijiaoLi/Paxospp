@@ -57,8 +57,7 @@ void PaxosServiceImpl::TerminateService()
 
 /* Initialize Paxos Service */
 void PaxosServiceImpl::InitializeService()
-{
-  
+{ 
   if (!initialized) {
     grpc::ServerBuilder builder;
     // listen on the given address
