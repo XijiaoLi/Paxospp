@@ -10,6 +10,7 @@
 #include <utility>
 #include <cstdlib> // int64_t
 #include <unistd.h> // usleep
+#include <stdlib.h>
 #include "paxos.h"
 
 #include <grpcpp/grpcpp.h>

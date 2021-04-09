@@ -24,7 +24,6 @@ service Paxos {
   rpc Receive (Proposal) returns (Response) {}
 }
 
-
 message Proposal {
   string    type = 1;
   int32     proposed_num = 2;
