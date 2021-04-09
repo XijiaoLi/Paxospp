@@ -76,8 +76,7 @@ class PaxosServiceImpl final : public Paxos::Service {
     bool request_accept(Instance* instance, int seq, std::string v);
     void decide(int seq, std::string v);
 
-    int peers_num;
-    int me;
+    // ...
     std::unique_ptr<grpc::Server> server;
     std::vector<std::unique_ptr<Paxos::Stub>> peers;
     std::vector<std::shared_ptr<grpc::Channel>> channels;
@@ -86,7 +85,6 @@ class PaxosServiceImpl final : public Paxos::Service {
     std::map<int, Instance*> instances;
     std::unique_ptr<std::thread> listener;
     std::vector<std::future<bool>> request_threads;
-    bool dead;
   
 
 };
