@@ -94,7 +94,6 @@ void PaxosServiceImpl::StartService()
 {
   std::unique_lock<std::shared_mutex> lock(mu);
   listener = std::make_unique<std::thread>([this]() {start_service();});
-  //listener = new std::thread( );
 }
 
 
