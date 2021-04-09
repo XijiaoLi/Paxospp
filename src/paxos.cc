@@ -32,17 +32,11 @@ std::vector<std::unique_ptr<Paxos::Stub>> make_stubs(int peers_num, std::vector<
 // --------------------- PaxosServiceImpl Public Function ----------------------
 
 /* Constructor */
-PaxosServiceImpl::PaxosServiceImpl(int peers_num, std::vector<std::shared_ptr<grpc::Channel>> channels, int me, bool debug)
-  : peers_num(peers_num), peers(std::move(make_stubs(peers_num, channels))), me(me), dead(false), initialized{true}, debug(debug) {}
+PaxosServiceImpl::PaxosServiceImpl(std::vector<std::string> peers_addr, int me, bool debug)
+  : peers_num(peers_addr.size()), peers_addr(peers_addr), me(me), dead(false), initialized(false), debug(debug) {}
 
-PaxosServiceImpl::PaxosServiceImpl(int peers_num, std::vector<std::string> peers_addr, int me, bool debug)
-  : peers_num(peers_num), peers_addr(peers_addr), me(me), dead(false), initialized(false), debug(debug) {}
-
-PaxosServiceImpl::PaxosServiceImpl(int peers_num, std::vector<std::shared_ptr<grpc::Channel>> channels, int me)
-  : peers_num(peers_num), peers(std::move(make_stubs(peers_num, channels))), me(me), dead(false), initialized{true}, debug(false) {}
-
-PaxosServiceImpl::PaxosServiceImpl(int peers_num, std::vector<std::string> peers_addr, int me)
-  : peers_num(peers_num), peers_addr(peers_addr), me(me), dead(false), initialized(false), debug(false) {}
+PaxosServiceImpl::PaxosServiceImpl(std::vector<std::string> peers_addr, int me)
+  : peers_num(peers_addr.size()), peers_addr(peers_addr), me(me), dead(false), initialized(false), debug(false) {}
 
 
 /* Shut down the server */
@@ -58,14 +52,12 @@ void PaxosServiceImpl::TerminateService()
 /* Initialize Paxos Service */
 void PaxosServiceImpl::InitializeService()
 {
-
   if (!initialized) {
-
     std::cout << "Manully start server " << me << std::endl;
     grpc::ServerBuilder builder;
     // listen on the given address
     builder.AddListeningPort(peers_addr[me], grpc::InsecureServerCredentials());
-    // register "service" as the instance to communicate with clients; it will corresponds to an *synchronous* service
+    // register "service" as the instance to communicate with clients
     builder.RegisterService(this);
     // assemble the server
     server = std::move(builder.BuildAndStart());
@@ -86,17 +78,13 @@ void PaxosServiceImpl::InitializeService()
       }
     }
   }
-
 }
 
 /* Server starts to listen on the address */
 void PaxosServiceImpl::StartService()
 {
-  //std::unique_lock<std::shared_mutex> lock(mu);
   listener = std::make_unique<std::thread>([this]() {start_service();});
-  //listener = new std::thread( );
 }
-
 
 
 /* Ping service for checking aliveness */
@@ -277,14 +265,12 @@ std::tuple<bool, std::string> PaxosServiceImpl::propose(Instance* instance, int 
     proposal.set_me(me);
     proposal.set_done(0);
 
-    // reply := Response{}
     Response response;
     if (debug){
       std::cout << "CPaxos " << me << " sent PROPOSE to SPaxos " << i << std::endl;
     }
 
     grpc::Status status = stub->Receive(&context, proposal, &response);
-    // if !flag { continue }
     if (!status.ok()) {
       continue;
     }
@@ -302,7 +288,6 @@ std::tuple<bool, std::string> PaxosServiceImpl::propose(Instance* instance, int 
     } else {
       highest_np = std::max(highest_np, n);
     }
-
     i++;
   }
 
@@ -312,10 +297,7 @@ std::tuple<bool, std::string> PaxosServiceImpl::propose(Instance* instance, int 
   } else {
     return std::make_tuple(false, "");
   }
-
 }
-
-
 
 
 bool PaxosServiceImpl::request_accept(Instance* instance, int seq, std::string v)
@@ -328,7 +310,6 @@ bool PaxosServiceImpl::request_accept(Instance* instance, int seq, std::string v
 
     ClientContext context;
 
-    // args := &Proposal{ACCEPT, instance.proposer.proposedNumber, seq, value, px.initMeta()}
     Proposal proposal;
     proposal.set_type("ACCEPT");
     proposal.set_proposed_num((instance->p).n);
@@ -337,7 +318,6 @@ bool PaxosServiceImpl::request_accept(Instance* instance, int seq, std::string v
     proposal.set_me(me);
     proposal.set_done(0);
 
-    // reply := Response{}
     Response response;
 
     if (debug){
@@ -347,17 +327,14 @@ bool PaxosServiceImpl::request_accept(Instance* instance, int seq, std::string v
     grpc::Status status = stub->Receive(&context, proposal, &response);
 
     if (status.ok()) {
-
       bool approved = response.approved();
       int n = response.number();
-
       if (approved) {
         count++;
       } else {
         highest_np = std::max(highest_np, n);
       }
     }
-
     i++;
   }
 
@@ -373,12 +350,10 @@ void PaxosServiceImpl::decide(int seq, std::string v)
 
   for (; count < peers_num;) {
     int i = 0;
-
     for (const auto& stub : peers) {
       if (records[i]) {
         continue;
       }
-
       ClientContext context;
 
       Proposal proposal;
@@ -404,7 +379,6 @@ void PaxosServiceImpl::decide(int seq, std::string v)
         if (debug){
           std::cout << "CPaxos " << me << " got from SPaxos " << i << ", DECIDE approved = " << approved << std::endl;
         }
-
         if (approved) {
           records[i] = true;
           count ++;

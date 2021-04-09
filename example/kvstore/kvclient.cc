@@ -81,9 +81,9 @@ int main(int argc, char** argv) {
 
   std::string reply;
   reply = client.Put(key, value);
-  usleep(5000000);
+  std::cout << "KVStoreClient received: " << reply << std::endl;
   reply = client.Get(key, value);
-  std::cout << "KVStore received: " << reply << std::endl;
+  std::cout << "KVStoreClient received: " << reply << std::endl;
 
   return 0;
 }

@@ -92,13 +92,13 @@ grpc::Status KVStoreImpl::Put(ServerContext* context, const KVRequest* request, 
 
   std::unique_lock<std::shared_mutex> lock(mu);
 
-	Op op = {
-		timestamp,
-		client_id,
-		"PUT",
-		key,
+  Op op = {
+    timestamp,
+    client_id,
+    "PUT",
+    key,
     value
-	};
+  };
 
   auto [ err, val ] = write_log(op);
 
@@ -116,13 +116,13 @@ grpc::Status KVStoreImpl::Get(ServerContext* context, const KVRequest* request, 
 
   std::unique_lock<std::shared_mutex> lock(mu);
 
-	Op op = {
-		timestamp,
-		client_id,
-		"GET",
-		key,
+  Op op = {
+    timestamp,
+    client_id,
+    "GET",
+    key,
     ""
-	};
+  };
 
   auto [ err, val ] = write_log(op);
 
@@ -169,16 +169,16 @@ std::tuple<std::string, std::string> KVStoreImpl::write_log(Op op)
 
 Op KVStoreImpl::get_log(int seq, Op op)
 {
-	bool end = false;
+  bool end = false;
   std::string op_str;
-	for (;!end;) {
-		auto [decided, val] = px.Status(seq);
+  for (;!end;) {
+    auto [decided, val] = px.Status(seq);
     end = decided;
     op_str = val;
-		usleep(200);
+    usleep(200);
     std::cout << "end = " << end << "\n";
-	}
-	return op;
+  }
+  return op;
 }
 
 
