@@ -135,9 +135,6 @@ grpc::Status KVStoreImpl::Get(ServerContext* context, const KVRequest* request, 
 
 std::tuple<std::string, std::string> KVStoreImpl::write_log(Op op)
 {
-    std::string op_str = encode(op);
-    std::cout << "kvStore server encoded op " << op_str << "\n";
-
     Response* latest_response;
     std::map<int64_t, Response*>::iterator it;
     it = latest_requests.find(op.client_id);
@@ -149,7 +146,8 @@ std::tuple<std::string, std::string> KVStoreImpl::write_log(Op op)
         return std::make_tuple("OutdatedRequest", "");
       }
     }
-
+  
+    std::string op_str = encode(op);
     for (;;) {
       int seq = committed_seq + 1;
       px.Start(seq, op_str);
@@ -163,7 +161,7 @@ std::tuple<std::string, std::string> KVStoreImpl::write_log(Op op)
     }
 
     db[op.key] = op.value;
-    return std::make_tuple("ok", "");
+    return std::make_tuple("OK", "");
 }
 
 
