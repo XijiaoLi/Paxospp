@@ -17,13 +17,6 @@
 using google::protobuf::TextFormat;
 using paxos::Paxos;
 
-/*
-int ndecided(const std::vector<std::unique_ptr<PaxosServiceImpl>>& pxs, int seq){
-  int count = 0;
-
-
-}
-*/
 
 /* helper function, wait and check */
 void wait_check(int start, int end, const std::vector<std::unique_ptr<PaxosServiceImpl>>& pxs, int wanted){
@@ -289,22 +282,21 @@ void test_concurrent(const std::vector<std::string>& addr_v) {
 
 int main(int argc, char** argv) {
 
-  // int peers_num = 3;
-  // std::vector<std::string> addr_v {"0.0.0.0:50051", "0.0.0.0:50052", "0.0.0.0:50053" };
-  // test_basic_put(addr_v);
+  std::vector<std::string> addr_v {"0.0.0.0:50051", "0.0.0.0:50052", "0.0.0.0:50053" };
+  test_basic_put(addr_v);
 
   int put_size = 100;
   std::vector<std::string> addr_v_heavy {"0.0.0.0:50061", "0.0.0.0:50062", "0.0.0.0:50063" };
   test_heavy_put(addr_v_heavy, put_size);
 
-  // std::vector<std::string> addr_v_unreliable {"0.0.0.0:50071", "0.0.0.0:50072", "0.0.0.0:50073",  "0.0.0.0:50074", "0.0.0.0:50075"};
-  // test_unreliable(addr_v_unreliable);
-  //
-  // std::vector<std::string> addr_v_minority {"0.0.0.0:50081", "0.0.0.0:50082", "0.0.0.0:50083",  "0.0.0.0:50084", "0.0.0.0:50085"};
-  // test_minority(addr_v_minority);
-  //
-  // std::vector<std::string> addr_v_concurent {"0.0.0.0:50091", "0.0.0.0:50092", "0.0.0.0:50093",  "0.0.0.0:50094", "0.0.0.0:50095"};
-  // test_concurrent(addr_v_concurent);
+  std::vector<std::string> addr_v_unreliable {"0.0.0.0:50071", "0.0.0.0:50072", "0.0.0.0:50073",  "0.0.0.0:50074", "0.0.0.0:50075"};
+  test_unreliable(addr_v_unreliable);
+
+  std::vector<std::string> addr_v_minority {"0.0.0.0:50081", "0.0.0.0:50082", "0.0.0.0:50083",  "0.0.0.0:50084", "0.0.0.0:50085"};
+  test_minority(addr_v_minority);
+
+  std::vector<std::string> addr_v_concurent {"0.0.0.0:50091", "0.0.0.0:50092", "0.0.0.0:50093",  "0.0.0.0:50094", "0.0.0.0:50095"};
+  test_concurrent(addr_v_concurent);
   return 0;
 
 }

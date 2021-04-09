@@ -13,21 +13,6 @@ using paxos::Proposal;
 using paxos::Response;
 using paxos::EmptyMessage;
 
-// ---------------------------- Helper Function ----------------------------
-
-std::vector<std::unique_ptr<Paxos::Stub>> make_stubs(int peers_num, std::vector<std::shared_ptr<grpc::Channel>> channels)
-{
-  std::vector<std::unique_ptr<Paxos::Stub>> peers; // a list of stubs
-
-  for (int i = 0; i < peers_num; ++i) {
-    // create a stub associated with the channel
-    std::unique_ptr<Paxos::Stub> peer_i = std::make_unique<Paxos::Stub>(channels[i]);
-    peers.push_back(std::move(peer_i));
-    std::cout << "Adding peer " << i << " to the Paxos stubs list ..." << std::endl;
-  }
-
-  return peers;
-}
 
 // --------------------- PaxosServiceImpl Public Function ----------------------
 
@@ -255,7 +240,6 @@ std::tuple<bool, std::string> PaxosServiceImpl::propose(Instance* instance, int 
 
     ClientContext context;
 
-    // args := &Proposal{PROPOSE, instance.proposer.proposedNumber, seq, nil, px.initMeta()}
     Proposal proposal;
     proposal.set_type("PROPOSE");
     proposal.set_proposed_num((instance->p).n);
