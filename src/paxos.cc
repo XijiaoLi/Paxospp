@@ -58,7 +58,7 @@ void PaxosServiceImpl::InitializeService()
       channels.push_back(std::move(channel_i));
       peers.push_back(std::move(peer_i));
       if (debug){
-        std::cout << "Adding peer " << i << " to the channel/stub list ..." << std::endl;
+        std::cout << "Adding peer " << i << " with address " << peers_addr[i] << " to the channel/stub list ..." << std::endl;
       }
     }
   }
@@ -118,8 +118,8 @@ grpc::Status PaxosServiceImpl::Receive(ServerContext* context, const Proposal* p
 
     if (debug){
         std::cout << "SPaxos " << me << " from CPaxos " << peer
-              << "\n\t DECIDE (seq, val) = (" << seq << ", " << value << ")"
-              << " from initial value \'" << instance->vd << "\'" << std::endl;
+                  << "\n\t DECIDE (seq, val) = (" << seq << ", " << value << ")"
+                  << " from initial value \'" << instance->vd << "\'" << std::endl;
     }
 
     instance->vd = value;
