@@ -1,5 +1,5 @@
-#ifndef KV_STORE_H
-#define KV_STORE_H
+#ifndef KVSTORE_SERVER_H
+#define KVSTORE_SERVER_H
 
 #include <chrono>
 #include <iostream>
@@ -43,35 +43,22 @@ struct Op {
   std::string value;
 };
 
-class KVStoreImpl final : public KVStore::Service {
+class KVStoreServer final : public KVStore::Service {
   public:
-
-    KVStoreImpl(std::map<std::string, std::string> db_seeds, int peers_num, std::vector<std::string> peers_addr, int me);
-
+    KVStoreServer(std::map<std::string, std::string> db_seeds, std::vector<std::string> peers_addr, int me);
     grpc::Status Get(ServerContext* context, const KVRequest* request, KVResponse* response) override;
-
     grpc::Status Put(ServerContext* context, const KVRequest* request, KVResponse* response) override;
 
-    // tell the server to shut itself down
-    // void Kill(int seq, std::string v);
-
   private:
-
-    // Instance* get_instance(int seq);
     std::tuple<std::string, std::string> write_log(Op op);
     std::tuple<std::string, std::string> execute_log(Op op);
-    Op get_log(int seq, Op op);
-    // void auto_update();
-    //
+    Op get_log(int seq);
+
     PaxosServiceImpl px;
-    PaxosServiceImpl px1;
-    PaxosServiceImpl px2;
-    // int me; // me
     int committed_seq;
-    mutable std::shared_mutex mu; // mu
+    mutable std::shared_mutex mu;
     std::map<std::string, std::string> db;
     std::map<int64_t, Response*> latest_requests;
-
 };
 
 } // namespace kvstore

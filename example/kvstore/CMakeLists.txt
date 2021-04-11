@@ -64,7 +64,7 @@ target_link_libraries(kvstore_grpc_proto
 
 # Targets (client|server)
 foreach(_target
-  kvstore kvclient)
+  kvstore-server kvstore-client)
   add_executable(${_target} "${_target}.cc" "${_target}.h")
   target_link_libraries(${_target}
     paxoslib
