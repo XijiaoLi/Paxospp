@@ -2,7 +2,6 @@ cmake/
 .DS_Store
 **/DS_Store
 docs/html/*
-!docs/html/index.html
 docs/latex
 Doxyfile
 Doxyfile.bak
