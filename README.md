@@ -6,6 +6,6 @@ Authors: Xijiao Li, Luofei Zhang, Jiawei Zhang
 
 # Content
 
-- [Tutorial](docs/tutorial.md)
-- [Design](docs/design.md)
-- [User Munual](docs/user-manual.md)
+- [Tutorial](documentations/tutorial.md)
+- [Design](documentations/design.md)
+- [User Munual](documentations/user-manual.md)
