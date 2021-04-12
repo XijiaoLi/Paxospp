@@ -1,3 +1,13 @@
+/**
+ *  @file   kvstore-server.cc
+ *  @brief  KVStoreServer Implementation
+ *  This file contains the function definitions for the
+ *  KVStoreServer and some useful helper functions.
+ *
+ *  @author Xijiao Li
+ *  @date   2021-04-12
+ ***********************************************/
+
 #include "kvstore-server.h"
 
 namespace kvstore {
@@ -249,6 +259,7 @@ int main(int argc, char** argv) {
         paxos_addr.push_back(argv[arg_i]);
         arg_i++;
       }
+      arg_i--;
       peers_num = paxos_addr.size();
       if (peers_num == 0) {
         show_usage(argv[0]);
@@ -261,21 +272,14 @@ int main(int argc, char** argv) {
       arg_i ++;
       if (arg_i < argc && argv[arg_i][0] != '-') {
         kvserver_addr = argv[arg_i];
-        arg_i++;
-      } else {
-        show_usage(argv[0]);
-        return 0;
       }
     } else if (strcmp(argv[arg_i], "-i") == 0) {
       arg_i ++;
       if (arg_i < argc && legal_int(argv[arg_i])) {
         me = std::stoi(argv[arg_i]);
-        arg_i++;
-      } else {
-        show_usage(argv[0]);
-        return 0;
       }
     }
+    arg_i++;
   }
 
   kvstore::RunServer(paxos_addr, kvserver_addr, me);

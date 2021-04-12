@@ -1,5 +1,15 @@
+/**
+ *  @file   paxos.cc
+ *  @brief  Paxos Service Implementation
+ *  This file contains the function implementations for the Paxos Class.
+ *
+ *  @author Xijiao Li
+ *  @date   2021-04-12
+ ***********************************************/
+
+
 #include <cstdlib>
-#include <algorithm>    // std::max
+#include <algorithm>
 
 #include "paxos.h"
 
@@ -8,24 +18,25 @@ using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::ClientContext;
 
-using paxos::Paxos;
+using paxos::PaxosService;
 using paxos::Proposal;
 using paxos::Response;
 using paxos::EmptyMessage;
 
+namespace paxos {
 
-// --------------------- PaxosServiceImpl Public Function ----------------------
+// --------------------- Paxos Public Function ----------------------
 
-/* Constructor */
-PaxosServiceImpl::PaxosServiceImpl(std::vector<std::string> peers_addr, int me, bool debug)
+// Constructor
+Paxos::Paxos(std::vector<std::string> peers_addr, int me, bool debug)
   : peers_num(peers_addr.size()), peers_addr(peers_addr), me(me), dead(false), initialized(false), debug(debug) {}
 
-PaxosServiceImpl::PaxosServiceImpl(std::vector<std::string> peers_addr, int me)
+Paxos::Paxos(std::vector<std::string> peers_addr, int me)
   : peers_num(peers_addr.size()), peers_addr(peers_addr), me(me), dead(false), initialized(false), debug(false) {}
 
 
-/* Shut down the server */
-void PaxosServiceImpl::TerminateService()
+// Shut down the server
+void Paxos::TerminateService()
 {
   std::unique_lock<std::shared_mutex> lock(mu);
   std::cout << "Server shutdown..." << std::endl;
@@ -34,8 +45,8 @@ void PaxosServiceImpl::TerminateService()
   listener->join();
 }
 
-/* Initialize Paxos Service */
-void PaxosServiceImpl::InitializeService()
+// Initialize Paxos Service
+void Paxos::InitializeService()
 {
   if (!initialized) {
     grpc::ServerBuilder builder;
@@ -54,7 +65,7 @@ void PaxosServiceImpl::InitializeService()
     for (int i = 0; i < peers_num; ++i) {
       // at each endpoint, create a channel for paxos to send rpc, and create a stub associated with the channel
       std::shared_ptr<grpc::Channel> channel_i = grpc::CreateChannel(peers_addr[i], grpc::InsecureChannelCredentials());
-      std::unique_ptr<Paxos::Stub> peer_i = std::make_unique<Paxos::Stub>(channel_i);
+      std::unique_ptr<PaxosService::Stub> peer_i = std::make_unique<PaxosService::Stub>(channel_i);
       channels.push_back(std::move(channel_i));
       peers.push_back(std::move(peer_i));
       if (debug){
@@ -64,22 +75,23 @@ void PaxosServiceImpl::InitializeService()
   }
 }
 
-/* Server starts to listen on the address */
-void PaxosServiceImpl::StartService()
+
+// Server starts to listen on the address
+void Paxos::StartService()
 {
   listener = std::make_unique<std::thread>([this]() {start_service();});
 }
 
 
-/* Ping service for checking aliveness */
-grpc::Status PaxosServiceImpl::Ping(ServerContext* context, const EmptyMessage* request, EmptyMessage* response)
+// Ping service for checking aliveness
+grpc::Status Paxos::Ping(ServerContext* context, const EmptyMessage* request, EmptyMessage* response)
 {
   return grpc::Status::OK;
 }
 
 
-/* Receive service for communication between paxos peers */
-grpc::Status PaxosServiceImpl::Receive(ServerContext* context, const Proposal* proposal, Response* response)
+// Receive service for communication between paxos peers
+grpc::Status Paxos::Receive(ServerContext* context, const Proposal* proposal, Response* response)
 {
   std::string type = proposal->type();
   int n = proposal->proposed_num();
@@ -129,10 +141,11 @@ grpc::Status PaxosServiceImpl::Receive(ServerContext* context, const Proposal* p
 }
 
 
-/* Check whether a peer thinks an instance has been decided,
-   and if so what the agreed value is. Should just inspect
-   the local peer state; it should not contact other peers. */
-std::tuple<bool, std::string> PaxosServiceImpl::Status(int seq)
+/** Check whether a peer thinks an instance has been decided,
+ *  and if so what the agreed value is. Should just inspect
+ *  the local peer state; it should not contact other peers.
+ */
+std::tuple<bool, std::string> Paxos::Status(int seq)
 {
   std::unique_lock<std::shared_mutex> lock(mu);
 
@@ -160,18 +173,25 @@ std::tuple<bool, std::string> PaxosServiceImpl::Status(int seq)
   return std::make_tuple(decided, val);
 }
 
-/* Start paxos service */
-grpc::Status PaxosServiceImpl::Start(int seq, std::string v)
+
+/**
+ * The application wants paxos to start agreement on
+ * instance seq, with proposed value v.
+ * Start() returns right away; the application will
+ * call Status() to find out if/when agreement
+ * is reached.
+ */
+grpc::Status Paxos::Start(int seq, std::string v)
 {
-  request_threads.push_back(std::async(std::launch::async,&PaxosServiceImpl::start, this, seq, v));
+  request_threads.push_back(std::async(std::launch::async,&Paxos::start, this, seq, v));
   return grpc::Status::OK;
 }
 
 
-// --------------------- PaxosServiceImpl Private Function ---------------------
+// --------------------- Paxos Private Function ---------------------
 
-/* Inner function for starting service */
-void PaxosServiceImpl::start_service()
+/// Inner function for starting service
+void Paxos::start_service()
 {
   if (debug){
      std::cout << "Wait for the server to shutdown..." << std::endl;
@@ -180,8 +200,8 @@ void PaxosServiceImpl::start_service()
 }
 
 
-/* Inner function for Start paxos */
-bool PaxosServiceImpl::start(int seq, std::string v)
+/// Inner function for Start paxos
+bool Paxos::start(int seq, std::string v)
 {
   Instance* instance = get_instance(seq);
 
@@ -209,7 +229,8 @@ bool PaxosServiceImpl::start(int seq, std::string v)
 }
 
 
-Instance* PaxosServiceImpl::get_instance(int seq)
+/// Get the instance with the given seq number, or create one and return the pointer to it if not found
+Instance* Paxos::get_instance(int seq)
 {
   std::unique_lock<std::shared_mutex> lock(mu);
 
@@ -228,7 +249,8 @@ Instance* PaxosServiceImpl::get_instance(int seq)
 }
 
 
-std::tuple<bool, std::string> PaxosServiceImpl::propose(Instance* instance, int seq)
+///
+std::tuple<bool, std::string> Paxos::propose(Instance* instance, int seq)
 {
   int count = 0;
   int highest_np = (instance->p).np;
@@ -283,7 +305,7 @@ std::tuple<bool, std::string> PaxosServiceImpl::propose(Instance* instance, int 
 }
 
 
-bool PaxosServiceImpl::request_accept(Instance* instance, int seq, std::string v)
+bool Paxos::request_accept(Instance* instance, int seq, std::string v)
 {
   int highest_np = (instance->p).np;
   int count = 0;
@@ -326,7 +348,7 @@ bool PaxosServiceImpl::request_accept(Instance* instance, int seq, std::string v
 }
 
 
-void PaxosServiceImpl::decide(int seq, std::string v)
+void Paxos::decide(int seq, std::string v)
 {
   std::vector<bool> records (peers.size(), false);
   int count = 0;
@@ -372,3 +394,5 @@ void PaxosServiceImpl::decide(int seq, std::string v)
   }
   return;
 }
+
+} // end of namespace paxos

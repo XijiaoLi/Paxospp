@@ -18,7 +18,7 @@ import "google/protobuf/any.proto";
 
 package paxos;
 
-service Paxos {
+service PaxosService {
   rpc Ping (EmptyMessage) returns (EmptyMessage) {}
   rpc Receive (Proposal) returns (Response) {}
 }

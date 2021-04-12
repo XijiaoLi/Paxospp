@@ -1,3 +1,12 @@
+/**
+ *  @file   kvstore-server.h
+ *  @brief  KVStoreServer Interface
+ *  This file contains the prototypes for the KVStoreServer class
+ *  and some strucures that you will need.
+ *  @author Xijiao Li
+ *  @date   2021-04-12
+ ***********************************************/
+
 #ifndef KVSTORE_SERVER_H
 #define KVSTORE_SERVER_H
 
@@ -29,12 +38,20 @@ using kvstore::KVResponse;
 
 namespace kvstore {
 
+/**
+ * \struct Response
+ * \brief A structure to represent a Response
+ */
 struct Response {
   int64_t timestamp;
   std::string err;
   std::string value;
 };
 
+/**
+ * \struct Op
+ * \brief A structure to represent an Op (operation)
+ */
 struct Op {
   int64_t timestamp;
   int64_t client_id;
@@ -43,18 +60,25 @@ struct Op {
   std::string value;
 };
 
+/**
+ * \class KVStoreServer
+ * \brief A class for the server side implementation KVStoreServer based on Paxos.
+ */
 class KVStoreServer final : public KVStore::Service {
+
   public:
+
     KVStoreServer(std::map<std::string, std::string> db_seeds, std::vector<std::string> peers_addr, int me);
     grpc::Status Get(ServerContext* context, const KVRequest* request, KVResponse* response) override;
     grpc::Status Put(ServerContext* context, const KVRequest* request, KVResponse* response) override;
 
   private:
+
     std::tuple<std::string, std::string> write_log(Op op);
     std::tuple<std::string, std::string> execute_log(Op op);
     Op get_log(int seq);
 
-    PaxosServiceImpl px;
+    paxos::Paxos px;
     int committed_seq;
     mutable std::shared_mutex mu;
     std::map<std::string, std::string> db;

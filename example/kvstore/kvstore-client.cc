@@ -1,4 +1,14 @@
-#include "kvstore-client.h"
+/**
+ *  @file   kvstore-client.cc
+ *  @brief  KVStoreClient Implementation
+ *  This file contains the function definitions for the
+ *  KVStoreClient class and some useful helper functions.
+ *
+ *  @author Xijiao Li
+ *  @date   2021-04-12
+ ***********************************************/
+
+ #include "kvstore-client.h"
 
 using grpc::ClientContext;
 using grpc::Status;

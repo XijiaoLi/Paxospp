@@ -1,7 +1,18 @@
+/**
+ *  @file   test.cc
+ *  @brief  Test for Paxos implementation
+ *  This file contains some performance tests for checking Paxos implementation.
+ *
+ *  @author Luofei Zhang
+ *  @author Xijiao Li
+ *  @author Jiawei Zhang
+ *  @date   2021-04-12
+ ***********************************************/
+
 #include <chrono>
 #include <memory>
-#include <string> // std::string
-#include <thread> // std::thread
+#include <string>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -9,17 +20,16 @@
 #include <random>
 #include <assert.h>
 
-
 #include <google/protobuf/text_format.h>
 #include <grpcpp/grpcpp.h>
 #include "paxos.h"
 
 using google::protobuf::TextFormat;
 using paxos::Paxos;
+using paxos::Paxos;
 
-
-/* helper function, wait and check */
-void wait_check(int start, int end, const std::vector<std::unique_ptr<PaxosServiceImpl>>& pxs, int wanted){
+/// Helper function, wait all paxos decided on a seq number and then check the agreed value.
+void wait_check(int start, int end, const std::vector<std::unique_ptr<Paxos>>& pxs, int wanted){
   int peers_num = pxs.size();
 
   for (int i = start; i <= end; i++){
@@ -46,8 +56,8 @@ void wait_check(int start, int end, const std::vector<std::unique_ptr<PaxosServi
   return;
 }
 
-/* helper function, wait and fail */
-void wait_fail(int start, int end, const std::vector<std::unique_ptr<PaxosServiceImpl>>& pxs, int wanted){
+/// Helper function, wait all paxos to decided on a seq number while some of them might have been dead
+void wait_fail(int start, int end, const std::vector<std::unique_ptr<Paxos>>& pxs, int wanted){
   int peers_num = pxs.size();
 
   for (int i = start; i <= end; i++){
@@ -69,15 +79,16 @@ void wait_fail(int start, int end, const std::vector<std::unique_ptr<PaxosServic
 }
 
 
+/// Test paxos's performance undering heavy put
 void test_heavy_put(const std::vector<std::string>& addr_v, int put_size)
 {
   int peers_num = addr_v.size();
-  std::vector<std::unique_ptr<PaxosServiceImpl>> pxs;
+  std::vector<std::unique_ptr<Paxos>> pxs;
 
   for (int i = 0; i < peers_num; ++i) {
     std::cout << i << " start" << std::endl;
-    std::unique_ptr<PaxosServiceImpl> paxos = std::unique_ptr<PaxosServiceImpl>(
-      new PaxosServiceImpl(addr_v, i)
+    std::unique_ptr<Paxos> paxos = std::unique_ptr<Paxos>(
+      new Paxos(addr_v, i)
     );
     paxos->InitializeService();
     paxos->StartService();
@@ -90,12 +101,16 @@ void test_heavy_put(const std::vector<std::string>& addr_v, int put_size)
   std::uniform_int_distribution<int> distribution(0, 500000);
   auto random = std::bind(distribution, generator);
 
+  auto before = std::chrono::system_clock::now();
   // heavy put
   for (int i = 0; i < put_size; i++){
     int server_num = random()%peers_num;
-    grpc::Status put_status = pxs.at(server_num)->Start(i, std::to_string(random()));
+    grpc::Status put_status = pxs.at(server_num)->Start(i, "hi");
   }
-
+  auto after = std::chrono::system_clock::now();
+  auto duration = after - before;
+  std::cout << "Heavy put takes " << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count()
+            << " milliseconds\n";
   wait_check(0, put_size-1, pxs, peers_num);
 
   // shut down
@@ -107,6 +122,7 @@ void test_heavy_put(const std::vector<std::string>& addr_v, int put_size)
 }
 
 
+/// Test paxos's performance undering basic put
 void test_basic_put(const std::vector<std::string>& addr_v){
    // random number seed
   int peers_num = addr_v.size();
@@ -116,9 +132,9 @@ void test_basic_put(const std::vector<std::string>& addr_v){
   auto random = std::bind(distribution, generator);
 
   // init paxos peers
-  PaxosServiceImpl paxos_0(addr_v, 0);
-  PaxosServiceImpl paxos_1(addr_v, 1);
-  PaxosServiceImpl paxos_2(addr_v, 2);
+  Paxos paxos_0(addr_v, 0);
+  Paxos paxos_1(addr_v, 1);
+  Paxos paxos_2(addr_v, 2);
   paxos_0.InitializeService();
   paxos_0.StartService();
   paxos_1.InitializeService();
@@ -156,14 +172,16 @@ void test_basic_put(const std::vector<std::string>& addr_v){
   return;
 }
 
+
+/// Test paxos's performance when some of the peers have unreliable connection
 void test_unreliable(const std::vector<std::string>& addr_v) {
 
-  std::vector<std::unique_ptr<PaxosServiceImpl>> pxs;
+  std::vector<std::unique_ptr<Paxos>> pxs;
   int peers_num = addr_v.size();
 
   for (int i = 0; i < peers_num; ++i) {
-    std::unique_ptr<PaxosServiceImpl> paxos = std::unique_ptr<PaxosServiceImpl>(
-      new PaxosServiceImpl(addr_v, i)
+    std::unique_ptr<Paxos> paxos = std::unique_ptr<Paxos>(
+      new Paxos(addr_v, i)
     );
     paxos->InitializeService();
     paxos->StartService();
@@ -209,13 +227,15 @@ void test_unreliable(const std::vector<std::string>& addr_v) {
   return;
 }
 
+
+/// Test paxos's performance when some peers are dead and only less then a half are alive
 void test_minority(const std::vector<std::string>& addr_v) {
   int peers_num = addr_v.size();
-  std::vector<std::unique_ptr<PaxosServiceImpl>> pxs;
+  std::vector<std::unique_ptr<Paxos>> pxs;
 
   for (int i = 0; i < peers_num; ++i) {
-    std::unique_ptr<PaxosServiceImpl> paxos = std::unique_ptr<PaxosServiceImpl>(
-      new PaxosServiceImpl(addr_v, i)
+    std::unique_ptr<Paxos> paxos = std::unique_ptr<Paxos>(
+      new Paxos(addr_v, i)
     );
     paxos->InitializeService();
     paxos->StartService();
@@ -244,14 +264,16 @@ void test_minority(const std::vector<std::string>& addr_v) {
   return;
 }
 
+
+/// Test paxos's performance when there are concurrent propose to send proposal for one same seq number
 void test_concurrent(const std::vector<std::string>& addr_v) {
 
   int peers_num = addr_v.size();
-  std::vector<std::unique_ptr<PaxosServiceImpl>> pxs;
+  std::vector<std::unique_ptr<Paxos>> pxs;
 
   for (int i = 0; i < peers_num; ++i) {
-    std::unique_ptr<PaxosServiceImpl> paxos = std::unique_ptr<PaxosServiceImpl>(
-      new PaxosServiceImpl(addr_v, i)
+    std::unique_ptr<Paxos> paxos = std::unique_ptr<Paxos>(
+      new Paxos(addr_v, i)
     );
     paxos->InitializeService();
     paxos->StartService();
@@ -280,13 +302,15 @@ void test_concurrent(const std::vector<std::string>& addr_v) {
 }
 
 
+/// Main entry for running paxos tests
 int main(int argc, char** argv) {
 
   std::vector<std::string> addr_v {"0.0.0.0:50051", "0.0.0.0:50052", "0.0.0.0:50053" };
   test_basic_put(addr_v);
 
-  int put_size = 100;
+  int put_size = 1000;
   std::vector<std::string> addr_v_heavy {"0.0.0.0:50061", "0.0.0.0:50062", "0.0.0.0:50063" };
+  std::cout << put_size << std::endl;
   test_heavy_put(addr_v_heavy, put_size);
 
   std::vector<std::string> addr_v_unreliable {"0.0.0.0:50071", "0.0.0.0:50072", "0.0.0.0:50073",  "0.0.0.0:50074", "0.0.0.0:50075"};
@@ -297,6 +321,7 @@ int main(int argc, char** argv) {
 
   std::vector<std::string> addr_v_concurent {"0.0.0.0:50091", "0.0.0.0:50092", "0.0.0.0:50093",  "0.0.0.0:50094", "0.0.0.0:50095"};
   test_concurrent(addr_v_concurent);
+
   return 0;
 
 }

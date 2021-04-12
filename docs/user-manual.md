@@ -1,12 +1,11 @@
-Manual
-======
+#Manual
 
-# gRPC Services 
-## Paxos rpc 
+# gRPC Services
+## Paxos rpc
 ### ``Ping:`` test if the server is available
 ### ``Receive:`` handles rpc requests based on the types
 
-## Messages 
+## Messages
 
 ### Proposal
 Proposal message is used to initiate messages in the propose or accept or decide phase in the paxos protocol.
@@ -23,8 +22,8 @@ Proposal message is used to initiate messages in the propose or accept or decide
 Response message is used to notify the message sender node about the database status in the message receiver node.
 ```C++
         string    type               Type of the rpc message
-        bool      approved           Whether or not the proposed_num satisfies conditions 
-        int32     number             The highestSeenProposedNumber from the peer server 
+        bool      approved           Whether or not the proposed_num satisfies conditions
+        int32     number             The highestSeenProposedNumber from the peer server
         string    value              The value associated with the highestSeenProposedNumber
         int32     me                 The ID of the server
         int32     done               Finished instances
@@ -42,7 +41,7 @@ The paxos instance, in other words, a log in the database, once the value stored
     }
 ```
 
-## Proposer 
+## Proposer
 The struct stores the proposedNumber and highestSeenProposedNumber
 ```C++
     struct Proposer {
@@ -68,12 +67,12 @@ This class is the Paxos Protocol Implementation class, which will help servers t
 ### Members
 #### Peers related, parameters
 ```C++
-            int peers_num                                          Number of nodes in the system 
+            int peers_num                                          Number of nodes in the system
             std::vector<std::string> peers_addr                    Peer ip address and port number
             std::vector<std::shared_ptr<grpc::Channel>> channels   Grpc channels
 ```
 
-#### Testing related 
+#### Testing related
 ```C++
             bool debug
             bool dead
@@ -87,7 +86,7 @@ This class is the Paxos Protocol Implementation class, which will help servers t
             std::unique_ptr<grpc::Server> server                    Thread runs the lisenting server
             mutable std::shared_mutex mu                            Lock on the operations               
             mutable std::shared_mutex acceptor_lock                 Lock on the requests
-            std::map<int, Instance*> instances                      Local replication stores the decided values 
+            std::map<int, Instance*> instances                      Local replication stores the decided values
             std::vector<std::future<bool>> request_threads          Placeholder for different requests        
 ```
 

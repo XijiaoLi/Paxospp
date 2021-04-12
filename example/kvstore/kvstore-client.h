@@ -1,3 +1,13 @@
+/**
+ *  @file   kvstore-client.h
+ *  @brief  KVStoreClient Interface
+ *  This file contains the prototypes for the KVStoreClient class
+ *  and some strucures that you will need.
+ *
+ *  @author Xijiao Li
+ *  @date   2021-04-12
+ ***********************************************/
+
 #ifndef KVSTORE_CLIENT_H
 #define KVSTORE_CLIENT_H
 
@@ -29,6 +39,10 @@ using kvstore::KVResponse;
 
 namespace kvstore {
 
+/**
+ * \class KVStoreClient
+ * \brief A class for the Client side implementation KVStoreClient based on Paxos.
+ */
 class KVStoreClient {
   public:
     KVStoreClient(std::shared_ptr<grpc::Channel> channel);

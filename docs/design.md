@@ -26,7 +26,7 @@ Unique pointers are heavily used in Paxospp library. Because `PaxosServiceImpl` 
 
 ### Locking
 - Shared_mutex
-Paxospp protects coherence among nodes by using locks before and after checking or changing the database in the node. So peers will not get chaotic views. 
+Paxospp protects coherence among nodes by using locks before and after checking or changing the database in the node. So peers will not get chaotic views.
 
 ## Features
 
@@ -37,7 +37,7 @@ Paxospp protects coherence among nodes by using locks before and after checking 
 - Paxospp library makes progress even when a subset of the nodes is up. In consideration of the complex environment in the real world, Paxospp tolerates the server failures and network crashes while still maintains data consistency.
 
 ### Concurency
-- Paxsospp enables multiple instances to launch at the same time in a non-blocking fashine. 
+- Paxsospp enables multiple instances to launch at the same time in a non-blocking fashine.
 
 ## Future works
 
@@ -45,6 +45,4 @@ Paxospp protects coherence among nodes by using locks before and after checking 
 - Currently, we only allows `std::string` stored in the paxos database. We would like to change to `std::any` when it is available in the future when new C++ versions released.
 
 ### Space Saving
-- In the current version, Paxospp stores all the previous data. However, some data may not needed after a certain amount of time, and it will just be a waste of disk resources to continue storing them. 
-
-
+- In the current version, Paxospp stores all the previous data. However, some data may not needed after a certain amount of time, and it will just be a waste of disk resources to continue storing them.
