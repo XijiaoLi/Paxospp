@@ -221,6 +221,7 @@ std::tuple<std::string, std::string> KVStoreServer::execute_log(Op op)
 } // namespace kvstore
 
 
+/// Helper function for displaying usage message
 void show_usage(char* name)
 {
   std::cerr << "Usage: " << name << " <option(s)> \n"
@@ -232,6 +233,8 @@ void show_usage(char* name)
             << std::endl;
 }
 
+
+/// Helper function for validating an integer
 bool legal_int(char *str) {
   while (*str) {
     if (!isdigit(*str++)) {
@@ -241,7 +244,7 @@ bool legal_int(char *str) {
   return true;
 }
 
-
+/// Main entry for starting the KVStore server
 int main(int argc, char** argv) {
   if (argc < 1) {
     return -EINVAL;

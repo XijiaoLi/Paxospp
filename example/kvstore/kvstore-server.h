@@ -68,21 +68,30 @@ class KVStoreServer final : public KVStore::Service {
 
   public:
 
+    /// Constructor for KVStoreServer
     KVStoreServer(std::map<std::string, std::string> db_seeds, std::vector<std::string> peers_addr, int me);
+
+    /// KVStore Get service to get a instance and put the value in the response
     grpc::Status Get(ServerContext* context, const KVRequest* request, KVResponse* response) override;
+
+    /// KVStore Put service to put an instance and put the statud in the response
     grpc::Status Put(ServerContext* context, const KVRequest* request, KVResponse* response) override;
 
   private:
-
+    /// Write a log for the given operation op by making a consensus with its paxos' peers
     std::tuple<std::string, std::string> write_log(Op op);
+
+    /// Excute the given operation op (either a Put or a Get)
     std::tuple<std::string, std::string> execute_log(Op op);
+
+    /// Get the operation according to the given seq number from the log
     Op get_log(int seq);
 
-    paxos::Paxos px;
-    int committed_seq;
-    mutable std::shared_mutex mu;
-    std::map<std::string, std::string> db;
-    std::map<int64_t, Response*> latest_requests;
+    paxos::Paxos px; /**< The paxos instance that binds with this KVStore server */
+    int committed_seq; /**< The sequence number used to record the latest committed seq */
+    mutable std::shared_mutex mu; /**< The mutex used to ensure concurrency */
+    std::map<std::string, std::string> db; /**< The local database */
+    std::map<int64_t, Response*> latest_requests; /**< The table used to store latest request for each client */
 };
 
 } // namespace kvstore

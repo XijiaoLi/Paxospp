@@ -45,12 +45,17 @@ namespace kvstore {
  */
 class KVStoreClient {
   public:
+    // Constructor for KVStoreClient
     KVStoreClient(std::shared_ptr<grpc::Channel> channel);
-    std::tuple<std::string, std::string> Put(const std::string& key, const std::string& value);
+
+    /// KVStore Get service to get a instance from the server
     std::tuple<std::string, std::string> Get(const std::string& key, const std::string& value);
 
+    /// KVStore Put service to Put a given key value pair into server's database
+    std::tuple<std::string, std::string> Put(const std::string& key, const std::string& value);
+
   private:
-    std::unique_ptr<KVStore::Stub> stub;
+    std::unique_ptr<KVStore::Stub> stub; /**< The stub used to sent rpc message to the server */
 };
 
 } // namespace kvstore

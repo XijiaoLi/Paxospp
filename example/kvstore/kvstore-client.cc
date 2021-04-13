@@ -70,6 +70,8 @@ std::tuple<std::string, std::string> KVStoreClient::Get(const std::string& key, 
 
 } // namespace KVstore
 
+
+/// Helper function for displaying usage message
 void show_usage(char* name)
 {
   std::cerr << "Usage: " << name << " <option(s)> \n"
@@ -82,6 +84,8 @@ void show_usage(char* name)
             << std::endl;
 }
 
+
+/// Main entry for starting the KVStore client
 int main(int argc, char** argv) {
 
   std::string KVserver_addr = "0.0.0.0:50061", key = "hello", val = "world", type = "PUT";
